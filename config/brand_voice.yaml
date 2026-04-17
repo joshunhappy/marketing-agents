@@ -1,0 +1,39 @@
+# Brand Voice Guidelines
+# Used by the Content Creation and Customer Engagement agents to stay on-brand.
+
+brand:
+  name: "Your Company"          # TODO: replace with actual company name
+  tagline: ""                   # TODO: add your tagline
+
+tone:
+  primary: professional
+  secondary: [approachable, confident, clear]
+  avoid: [jargon, overly casual, hyperbolic claims, passive voice]
+
+style:
+  sentence_length: concise      # prefer short, punchy sentences
+  reading_level: 8th_grade      # aim for broad accessibility
+  point_of_view: second_person  # "you" language, not "our customers"
+  oxford_comma: true
+
+content_principles:
+  - Lead with customer value, not product features
+  - Use data and specificity over vague claims
+  - Every piece of content should have one clear CTA
+  - Match the channel's native register (LinkedIn ≠ Twitter ≠ email)
+
+prohibited:
+  - words: [synergy, leverage (as verb), disruption, guru, ninja, rockstar]
+  - claims: []  # TODO: add any legally restricted claims
+
+personas:
+  # Target audience segments — used for personalization
+  - id: smb_founder
+    label: "SMB Founder"
+    pain_points: [time, cost, lack of expertise]
+    preferred_channels: [email, linkedin]
+
+  - id: enterprise_marketing_director
+    label: "Enterprise Marketing Director"
+    pain_points: [scale, reporting, team alignment]
+    preferred_channels: [linkedin, webinar, email]

@@ -1,0 +1,59 @@
+# Marketing Agents — Runtime Configuration
+# Secrets belong in .env — this file is safe to commit.
+
+anthropic:
+  # Model selection per agent tier
+  model_primary: claude-opus-4-6          # complex reasoning (strategy, intelligence)
+  model_secondary: claude-sonnet-4-6      # balanced (content, lead gen)
+  model_fast: claude-haiku-4-5-20251001   # high-volume tasks (enrichment, scoring)
+  max_tokens: 4096
+
+pipeline:
+  # Run all agents in sequence or specific ones
+  enabled_agents:
+    - market_intelligence
+    - content_creation
+    - lead_generation
+    - campaign_optimization
+    - customer_engagement
+    - strategy_synthesis
+  dry_run: true   # overridden by PIPELINE_DRY_RUN env var
+
+agents:
+  market_intelligence:
+    require_approval: false   # read-only agent, safe to run autonomously
+    schedule: "weekly"        # cron hint for scheduling
+    model_tier: primary
+
+  content_creation:
+    require_approval: true    # human review on all drafts initially
+    schedule: "daily"
+    model_tier: secondary
+    output_formats: [blog, email_sequence, ad_copy, social_post, landing_page]
+
+  lead_generation:
+    require_approval: true    # never send outreach without approval in Phase 2
+    schedule: "daily"
+    model_tier: secondary
+    outreach_daily_limit: 50  # max personalized emails drafted per run
+
+  campaign_optimization:
+    require_approval: true    # recommendations only — no auto-pausing ads yet
+    schedule: "daily"
+    model_tier: secondary
+
+  customer_engagement:
+    require_approval: true
+    schedule: "daily"
+    model_tier: secondary
+    churn_risk_alert_channel: slack
+
+  strategy_synthesis:
+    require_approval: false   # report only, no external actions
+    schedule: "weekly"
+    model_tier: primary
+
+reporting:
+  output_dir: reports/
+  formats: [markdown, json]
+  slack_notify: false       # set to true once Slack webhook is configured

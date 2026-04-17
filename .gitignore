@@ -1,0 +1,29 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Reports (agent outputs — store locally, not in git)
+reports/*
+!reports/.gitkeep
+
+# Logs
+logs/
+*.log
+
+# macOS
+.DS_Store

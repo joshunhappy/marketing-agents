@@ -1,0 +1,36 @@
+# Ideal Customer Profile (ICP)
+# Used by the Lead Generation and Market Intelligence agents.
+
+icp:
+  # TODO: fill in your actual ICP
+  firmographics:
+    industries: []              # e.g. [SaaS, FinTech, Healthcare]
+    company_size: []            # e.g. [50-500 employees]
+    revenue_range: []           # e.g. [$5M-$100M ARR]
+    geographies: []             # e.g. [North America, Western Europe]
+    funding_stages: []          # e.g. [Series A, Series B, Bootstrapped]
+
+  technographics:
+    uses_tools: []              # tools your best customers use
+    avoids_tools: []            # competitors or disqualifiers
+
+  behavioral_signals:
+    high_intent:
+      - Visited pricing page
+      - Downloaded a case study
+      - Attended a webinar
+      - Job posting for roles that need your product
+    low_intent:
+      - Bounced homepage in < 10s
+      - Free plan user > 90 days inactive
+
+  disqualifiers:
+    - Company size < 10 employees
+    - Industry: [government, non-profit]  # adjust as needed
+
+lead_scoring:
+  weights:
+    firmographic_fit: 40
+    behavioral_signals: 35
+    technographic_fit: 25
+  qualified_threshold: 65      # score >= 65 = MQL
