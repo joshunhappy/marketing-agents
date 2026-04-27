@@ -51,9 +51,11 @@ agents:
   strategy_synthesis:
     require_approval: false   # report only, no external actions
     schedule: "weekly"
-    model_tier: primary
+    model_tier: secondary     # sonnet is sufficient for synthesis; opus hits rate limits after 5 agents
 
 reporting:
   output_dir: reports/
   formats: [markdown, json]
-  slack_notify: false       # set to true once Slack webhook is configured
+  slack_notify: false       # set to true once Slack webhook is configured (integrations.yaml → slack)
+
+integrations_config: config/integrations.yaml   # data source registry from Phase 1 audit

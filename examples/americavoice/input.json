@@ -1,0 +1,154 @@
+{
+    "competitor_urls": [
+        "https://www.ding.com/",
+        "https://www.bossrevolution.com/",
+        "https://www.recharge.com/"
+    ],
+    "industry_topics": [
+        "international mobile top-up trends",
+        "migrant remittance fintech",
+        "prepaid telecom Latin America",
+        "unbanked consumer payments US"
+    ],
+    "customer_reviews": [
+        "Really easy to send Call Credit and Data to my mom in Guatemala, took less than a minute.",
+        "I've been using America Voice for 3 years, never had a problem.",
+        "Sometimes the app crashes when I try to pay with PayPal.",
+        "Wish there were more gift card options for Honduras.",
+        "Great service but the fees are a bit confusing at checkout.",
+        "Sent a top-up to my sister in Mexico and she got it instantly. Love this app."
+    ],
+    "content_brief": "Promote the new unlimited calling plan to Mexico and Guatemala. Target existing customers who have sent 3+ top-ups in the last 90 days. Emphasize the emotional benefit of never missing a call home, and highlight the simplicity of the flat monthly rate with no hidden fees.",
+    "content_formats": ["email_sequence", "social_post", "ad_copy"],
+    "leads": [
+        {
+            "id": "L001",
+            "name": "Carlos Mendoza",
+            "country_of_origin": "Mexico",
+            "location": "Los Angeles, CA",
+            "signup_channel": "app_store",
+            "days_since_signup": 3,
+            "top_up_count": 0,
+            "referral_source": "friend"
+        },
+        {
+            "id": "L002",
+            "name": "Rosa Hernandez",
+            "country_of_origin": "Guatemala",
+            "location": "Houston, TX",
+            "signup_channel": "dealer",
+            "days_since_signup": 12,
+            "top_up_count": 1,
+            "referral_source": "bodega"
+        },
+        {
+            "id": "L003",
+            "name": "Jean-Pierre Duvall",
+            "country_of_origin": "Haiti",
+            "location": "Miami, FL",
+            "signup_channel": "website",
+            "days_since_signup": 1,
+            "top_up_count": 0,
+            "referral_source": "google_ad"
+        }
+    ],
+    "campaign_data": {
+        "period": "last_7_days",
+        "google_ads": {
+            "impressions": 84200,
+            "clicks": 1930,
+            "ctr_pct": 2.3,
+            "spend_usd": 1240,
+            "conversions": 87,
+            "cost_per_conversion_usd": 14.25,
+            "top_campaigns": [
+                {
+                    "name": "Mexico Top-Up — Search",
+                    "roas": 4.2,
+                    "status": "active"
+                },
+                {
+                    "name": "Guatemala — Broad Match",
+                    "roas": 1.8,
+                    "status": "active"
+                },
+                {
+                    "name": "Haiti Recharge — Display",
+                    "roas": 0.9,
+                    "status": "active"
+                }
+            ]
+        },
+        "meta_ads": {
+            "impressions": 210000,
+            "clicks": 5800,
+            "ctr_pct": 2.76,
+            "spend_usd": 1850,
+            "conversions": 143,
+            "cost_per_conversion_usd": 12.94,
+            "top_campaigns": [
+                {
+                    "name": "Family Connection — Video",
+                    "roas": 5.1,
+                    "status": "active"
+                },
+                {
+                    "name": "Dealer Recruitment — Lead Form",
+                    "roas": 2.3,
+                    "status": "active"
+                },
+                {
+                    "name": "El Salvador Recharge — Carousel",
+                    "roas": 1.2,
+                    "status": "active"
+                }
+            ]
+        }
+    },
+    "customers": [
+        {
+            "id": "C001",
+            "name": "Maria Gutierrez",
+            "country_of_origin": "Mexico",
+            "days_since_signup": 9,
+            "top_up_count": 2,
+            "last_top_up_days_ago": 4,
+            "avg_top_up_usd": 15,
+            "email": "maria.g@example.com"
+        },
+        {
+            "id": "C002",
+            "name": "Luis Torres",
+            "country_of_origin": "El Salvador",
+            "days_since_signup": 410,
+            "top_up_count": 38,
+            "last_top_up_days_ago": 62,
+            "avg_top_up_usd": 20,
+            "email": "ltorres@example.com"
+        },
+        {
+            "id": "C003",
+            "name": "Claudette Joseph",
+            "country_of_origin": "Haiti",
+            "days_since_signup": 185,
+            "top_up_count": 14,
+            "last_top_up_days_ago": 8,
+            "avg_top_up_usd": 12,
+            "email": "cjoseph@example.com"
+        }
+    ],
+    "social_mentions": [
+        {
+            "platform": "twitter",
+            "handle": "@miguelramos_la",
+            "text": "@AmericaVoice my top-up to Oaxaca still hasn't gone through after 2 hours. What's going on?",
+            "sentiment": "negative"
+        },
+        {
+            "platform": "facebook",
+            "handle": "Ana Beatriz Flores",
+            "text": "Just sent my first top-up with America Voice — so easy! My mom in Guatemala got it right away.",
+            "sentiment": "positive"
+        }
+    ]
+}

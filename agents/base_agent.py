@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -33,7 +34,7 @@ class AgentResult:
         self.success = success
         self.data = data
         self.summary = summary
-        self.timestamp = datetime.utcnow().isoformat()
+        self.timestamp = datetime.now(UTC).isoformat()
 
     def to_dict(self) -> dict:
         return {
@@ -49,7 +50,7 @@ class AgentResult:
         out = Path(output_dir)
         out.mkdir(exist_ok=True)
         slug = self.agent_name.replace(" ", "_").lower()
-        date = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        date = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
         # JSON
         json_path = out / f"{slug}_{date}.json"
@@ -119,16 +120,25 @@ class BaseAgent(ABC):
             raise FileNotFoundError(f"Prompt not found: {path}")
         return path.read_text()
 
-    def _call(self, system: str, user: str, max_tokens: int | None = None) -> str:
-        """Single-turn Claude API call. Returns the text response."""
+    def _call(self, system: str, user: str, max_tokens: int | None = None, _retries: int = 4) -> str:
+        """Single-turn Claude API call with exponential backoff on rate limits."""
         max_tokens = max_tokens or self.settings.get("anthropic", {}).get("max_tokens", 4096)
-        message = self.client.messages.create(
-            model=self._model(),
-            max_tokens=max_tokens,
-            system=system,
-            messages=[{"role": "user", "content": user}],
-        )
-        return message.content[0].text
+        for attempt in range(_retries):
+            try:
+                message = self.client.messages.create(
+                    model=self._model(),
+                    max_tokens=max_tokens,
+                    system=system,
+                    messages=[{"role": "user", "content": user}],
+                )
+                return message.content[0].text
+            except anthropic.RateLimitError as e:
+                if attempt == _retries - 1:
+                    raise
+                wait = 60 * (attempt + 1)  # 60s, 120s, 180s
+                console.print(f"[yellow]Rate limit hit — waiting {wait}s (attempt {attempt + 1}/{_retries - 1})...[/yellow]")
+                time.sleep(wait)
+        raise RuntimeError("Unreachable")
 
     def _gate(self, action_description: str) -> bool:
         """

@@ -1,0 +1,69 @@
+# Ideal Customer Profile (ICP)
+# Source: AmericaVoice-BrandVoiceGuide.docx (2026)
+# Used by the Lead Generation and Market Intelligence agents.
+# Note: America Voice is B2C — ICP is individual consumers, not companies.
+
+icp:
+  primary:
+    label: "The Migrant Provider"
+    description: >
+      First- or second-generation immigrant living in the US or Canada who is
+      financially supporting family back home. Feels deep responsibility and love
+      for the people they left behind. Sending a top-up is an act of love.
+    demographics:
+      age_range: "25–55"
+      location: "US & Canada (urban areas)"
+      origin_countries:
+        - Mexico
+        - Guatemala
+        - Honduras
+        - El Salvador
+        - Dominican Republic
+        - Haiti
+        - Cuba
+      language: "Spanish-dominant or bilingual"
+      income: "Working to middle class"
+    psychographics:
+      - "Feels pride in providing for family"
+      - "Values trust and security deeply"
+      - "Wants simplicity — no confusing fees or delays"
+      - "Emotionally driven — sending a top-up is an act of love"
+      - "Loyal to brands that respect their culture and struggle"
+
+  secondary:
+    label: "The Reseller / Dealer"
+    description: >
+      Small business owners (bodegas, phone shops, convenience stores) across the US
+      who distribute America Voice products. Want extra revenue and foot traffic.
+    messaging_approach: "Business-focused: easy setup, good margins, reliable support."
+
+behavioral_signals:
+  high_intent:
+    - Visited top-up/recharge page
+    - Started but did not complete a top-up
+    - Checked balance or promotions
+    - Clicked a country-specific offer (e.g. Mexico, Guatemala)
+    - Downloaded the app but not yet sent
+    - Opened 2+ emails in a sequence
+  low_intent:
+    - Bounced homepage in < 10s
+    - Inactive for > 60 days after first top-up
+    - Opened emails but never clicked
+
+disqualifiers:
+  - "Looking for B2B bulk airtime — route to Reseller segment instead"
+  - "Outside US or Canada (sender location)"
+
+lead_scoring:
+  weights:
+    origin_country_match: 30      # top origin countries weighted higher
+    behavioral_signals: 40
+    recency: 30                   # how recently they engaged
+  qualified_threshold: 65         # score >= 65 = MQL
+
+markets:
+  primary_focus:
+    - Latin America
+    - Caribbean
+  supported_countries: "100+"
+  key_carriers: [Tigo, Claro, Movistar, Telcel, Digicel]

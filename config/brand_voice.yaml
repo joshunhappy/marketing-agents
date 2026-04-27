@@ -1,39 +1,102 @@
-# Brand Voice Guidelines
+# Brand Voice Guidelines — Template
+# Populate this file with your brand's voice, tone, and messaging guardrails.
 # Used by the Content Creation and Customer Engagement agents to stay on-brand.
+#
+# A fully populated example lives at examples/americavoice/brand_voice.yaml.
 
 brand:
-  name: "Your Company"          # TODO: replace with actual company name
-  tagline: ""                   # TODO: add your tagline
+  name: "{{BRAND_NAME}}"
+  tagline: "{{BRAND_TAGLINE}}"
+  founded: "{{FOUNDED_YEAR_OR_AGE}}"
+  description: >
+    {{One- or two-sentence description of what the brand does, who it serves,
+    and what makes it distinct.}}
+  distribution:
+    - "{{Channel 1, e.g. Website, iOS app, retail partners}}"
+    - "{{Channel 2}}"
 
 tone:
-  primary: professional
-  secondary: [approachable, confident, clear]
-  avoid: [jargon, overly casual, hyperbolic claims, passive voice]
+  # Pick one primary adjective and 2–5 supporting ones.
+  primary: "{{e.g. warm | authoritative | playful | technical}}"
+  secondary: ["{{adjective}}", "{{adjective}}", "{{adjective}}"]
+  # Traits to actively avoid in all copy.
+  avoid: [corporate_jargon, formal_stiff, fear_based, guilt_based]
+  # Describe each pillar so agents know how to apply it.
+  pillars:
+    "{{pillar_1}}": "{{What this pillar means in practice.}}"
+    "{{pillar_2}}": "{{What this pillar means in practice.}}"
 
 style:
-  sentence_length: concise      # prefer short, punchy sentences
-  reading_level: 8th_grade      # aim for broad accessibility
-  point_of_view: second_person  # "you" language, not "our customers"
+  sentence_length: short          # short | medium | long
+  reading_level: accessible       # accessible | professional | technical
+  point_of_view: second_person    # first_person | second_person | third_person
   oxford_comma: true
+  language_default: english
+  # Optional: notes on localization, bilingual audiences, dialect preferences, etc.
+  localization_note: >
+    {{Optional. E.g. "When writing Spanish, use neutral Latin American Spanish.
+    Avoid regional slang."}}
 
 content_principles:
-  - Lead with customer value, not product features
-  - Use data and specificity over vague claims
-  - Every piece of content should have one clear CTA
-  - Match the channel's native register (LinkedIn ≠ Twitter ≠ email)
+  - "{{e.g. Lead every message with a human benefit before the technical feature.}}"
+  - "{{e.g. One clear CTA per message — never more.}}"
+  - "{{e.g. Personalize with first name and relevant context when available.}}"
+
+channel_tone:
+  email:
+    tone: "{{e.g. warm, personal, conversational}}"
+    notes: "{{Channel-specific guidance for agents.}}"
+  social_media:
+    tone: "{{e.g. upbeat, celebratory}}"
+    notes: "{{Channel-specific guidance.}}"
+  paid_ads:
+    tone: "{{e.g. direct, benefit-led}}"
+    notes: "{{Channel-specific guidance.}}"
+  push_notifications:
+    tone: "{{e.g. crisp, timely, action-driven}}"
+    notes: "{{Channel-specific guidance — e.g. max word count, frequency.}}"
+  blog_seo:
+    tone: "{{e.g. helpful, educational}}"
+    notes: "{{Channel-specific guidance.}}"
+
+messaging_by_goal:
+  lead_generation:
+    emphasis: "{{What to emphasize when the goal is new-lead acquisition.}}"
+    sample_headlines:
+      - "{{Sample headline 1}}"
+      - "{{Sample headline 2}}"
+  conversion:
+    emphasis: "{{What to emphasize to reduce hesitation and drive conversion.}}"
+    sample_headlines:
+      - "{{Sample headline 1}}"
+      - "{{Sample headline 2}}"
+  retention_upsell:
+    emphasis: "{{What to emphasize for existing customers — loyalty, upsell, cross-sell.}}"
+    sample_headlines:
+      - "{{Sample headline 1}}"
+      - "{{Sample headline 2}}"
+
+# Preferred vs. alternative terminology. Keys are preferred terms; values explain why.
+glossary:
+  preferred:
+    "{{Preferred term}}": "{{Why this over alternatives.}}"
+    "{{Preferred term}}": "{{Why this over alternatives.}}"
 
 prohibited:
-  - words: [synergy, leverage (as verb), disruption, guru, ninja, rockstar]
-  - claims: []  # TODO: add any legally restricted claims
+  # Words the agents should never use.
+  words: [leverage, synergy, utilize]
+  # Claims that require marketing/legal sign-off before appearing in copy.
+  claims:
+    - "{{e.g. Do not mention specific pricing without confirmation.}}"
+  # Persuasion tactics that violate brand values.
+  tactics: [fear, guilt, shame]
 
-personas:
-  # Target audience segments — used for personalization
-  - id: smb_founder
-    label: "SMB Founder"
-    pain_points: [time, cost, lack of expertise]
-    preferred_channels: [email, linkedin]
+# Concrete on-brand examples for the agents to pattern-match against.
+do_examples:
+  - "{{On-brand example 1}}"
+  - "{{On-brand example 2}}"
 
-  - id: enterprise_marketing_director
-    label: "Enterprise Marketing Director"
-    pain_points: [scale, reporting, team alignment]
-    preferred_channels: [linkedin, webinar, email]
+# Concrete off-brand examples to steer away from.
+dont_examples:
+  - "{{Off-brand example 1 — explain briefly why it fails.}}"
+  - "{{Off-brand example 2}}"

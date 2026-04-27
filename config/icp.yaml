@@ -1,36 +1,73 @@
-# Ideal Customer Profile (ICP)
+# Ideal Customer Profile (ICP) — Template
+# Populate with the persona(s) your marketing engine should target.
 # Used by the Lead Generation and Market Intelligence agents.
+#
+# A fully populated example lives at examples/americavoice/icp.yaml.
+# Note: this template is written for either B2B or B2C — remove the fields
+# that don't apply (e.g. drop `company_size` for B2C, drop `origin_countries`
+# for B2B).
 
 icp:
-  # TODO: fill in your actual ICP
-  firmographics:
-    industries: []              # e.g. [SaaS, FinTech, Healthcare]
-    company_size: []            # e.g. [50-500 employees]
-    revenue_range: []           # e.g. [$5M-$100M ARR]
-    geographies: []             # e.g. [North America, Western Europe]
-    funding_stages: []          # e.g. [Series A, Series B, Bootstrapped]
+  primary:
+    label: "{{Short persona name, e.g. 'The Growth-Stage VP of Marketing'}}"
+    description: >
+      {{Two to three sentences describing who this person is, what motivates
+      them, and what problem they're trying to solve when they find you.}}
 
-  technographics:
-    uses_tools: []              # tools your best customers use
-    avoids_tools: []            # competitors or disqualifiers
+    # ── B2B demographics (delete block if B2C) ─────────────────────────────
+    firmographics:
+      company_size: "{{e.g. 50–500 employees}}"
+      industry: ["{{industry_1}}", "{{industry_2}}"]
+      revenue_range: "{{e.g. $5M–$50M ARR}}"
+      role_titles: ["{{Title 1}}", "{{Title 2}}"]
+      geography: "{{e.g. North America, EMEA}}"
 
-  behavioral_signals:
-    high_intent:
-      - Visited pricing page
-      - Downloaded a case study
-      - Attended a webinar
-      - Job posting for roles that need your product
-    low_intent:
-      - Bounced homepage in < 10s
-      - Free plan user > 90 days inactive
+    # ── B2C demographics (delete block if B2B) ─────────────────────────────
+    demographics:
+      age_range: "{{e.g. 25–55}}"
+      location: "{{e.g. US urban markets}}"
+      language: "{{primary language(s)}}"
+      income: "{{income band}}"
 
-  disqualifiers:
-    - Company size < 10 employees
-    - Industry: [government, non-profit]  # adjust as needed
+    psychographics:
+      - "{{What they value}}"
+      - "{{What frustrates them}}"
+      - "{{What they aspire to}}"
 
+  # Optional second persona. Delete this block if you only serve one.
+  secondary:
+    label: "{{Secondary persona name}}"
+    description: >
+      {{Brief description of the secondary persona and when to target them
+      instead of the primary.}}
+    messaging_approach: "{{How the pitch shifts for this persona.}}"
+
+behavioral_signals:
+  # Actions that indicate a lead is close to converting.
+  high_intent:
+    - "{{e.g. Visited pricing page 2+ times in 7 days}}"
+    - "{{e.g. Requested a demo or started a free trial}}"
+    - "{{e.g. Opened 3+ emails in a sequence}}"
+  # Actions that indicate low fit or low engagement.
+  low_intent:
+    - "{{e.g. Bounced homepage in under 10 seconds}}"
+    - "{{e.g. Inactive for more than 60 days after signup}}"
+
+# Traits that disqualify a lead from the ICP entirely.
+disqualifiers:
+  - "{{e.g. Outside target geography}}"
+  - "{{e.g. Competitor or vendor, not a potential customer}}"
+
+# Weights add up to 100. Agent 03 uses these to score each lead.
 lead_scoring:
   weights:
-    firmographic_fit: 40
-    behavioral_signals: 35
-    technographic_fit: 25
-  qualified_threshold: 65      # score >= 65 = MQL
+    fit: 40            # demographic/firmographic match
+    behavioral: 40     # signals of intent
+    recency: 20        # how recently they engaged
+  qualified_threshold: 65   # score >= this value is marked MQL
+
+# Optional: market/geography context that shapes outreach.
+markets:
+  primary_focus:
+    - "{{Market 1}}"
+  supported_regions: "{{e.g. Global, US-only, EU+UK}}"

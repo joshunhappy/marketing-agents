@@ -1,0 +1,105 @@
+{
+    "competitor_urls": [
+        "https://competitor-a.com",
+        "https://competitor-b.com"
+    ],
+    "industry_topics": [
+        "AI marketing automation",
+        "B2B lead generation 2026",
+        "marketing attribution"
+    ],
+    "customer_reviews": [
+        "Great product but the onboarding took forever to figure out. Wish there was a better getting-started guide.",
+        "We doubled our email open rates in the first month. The segmentation tools are incredibly powerful.",
+        "Support is slow to respond. Had a critical issue take 3 days to resolve. Almost churned because of it."
+    ],
+    "content_brief": "Write content explaining how AI agents can automate the full B2B marketing funnel. Target audience: marketing directors at 50-500 person SaaS companies. Goal: generate demo requests. Primary keyword: 'AI marketing automation'. CTA: Book a free strategy call.",
+    "content_formats": ["blog", "email_sequence", "ad_copy"],
+    "leads": [
+        {
+            "id": "L001",
+            "name": "Sarah Chen",
+            "title": "VP of Marketing",
+            "company": "Acme SaaS",
+            "company_size": "150 employees",
+            "industry": "B2B SaaS",
+            "website": "acmesaas.com",
+            "recent_activity": "Downloaded ROI calculator, visited pricing page twice",
+            "tech_stack": ["HubSpot", "Google Ads", "Segment"]
+        },
+        {
+            "id": "L002",
+            "name": "Marcus Thompson",
+            "title": "Founder",
+            "company": "ThompsonTech",
+            "company_size": "8 employees",
+            "industry": "IT Consulting",
+            "website": "thompsontech.io",
+            "recent_activity": "Read one blog post",
+            "tech_stack": ["Mailchimp"]
+        }
+    ],
+    "campaign_data": {
+        "period": "last_7_days",
+        "google_ads": {
+            "impressions": 8500,
+            "clicks": 340,
+            "ctr_pct": 4.0,
+            "spend_usd": 1200,
+            "conversions": 18,
+            "cost_per_conversion_usd": 66.67,
+            "top_campaigns": [
+                {"name": "Brand Search — Google", "roas": 4.2, "status": "active"},
+                {"name": "Competitor Keywords — Google", "roas": 0.8, "status": "active"}
+            ]
+        },
+        "meta_ads": {
+            "impressions": 45000,
+            "clicks": 420,
+            "ctr_pct": 0.93,
+            "spend_usd": 600,
+            "conversions": 11,
+            "cost_per_conversion_usd": 54.5,
+            "top_campaigns": [
+                {"name": "Retargeting — Meta", "roas": 3.1, "status": "active"}
+            ]
+        }
+    },
+    "customers": [
+        {
+            "id": "C001",
+            "name": "Globex Corp",
+            "plan": "Professional",
+            "days_since_signup": 5,
+            "monthly_spend_usd": 299,
+            "logins_last_30_days": 12,
+            "features_used": ["email", "crm_sync"],
+            "support_tickets_open": 0
+        },
+        {
+            "id": "C002",
+            "name": "Initech LLC",
+            "plan": "Starter",
+            "days_since_signup": 95,
+            "monthly_spend_usd": 49,
+            "logins_last_30_days": 1,
+            "features_used": ["email"],
+            "support_tickets_open": 2,
+            "last_support_sentiment": "frustrated"
+        }
+    ],
+    "social_mentions": [
+        {
+            "platform": "twitter",
+            "handle": "@jane_marketer",
+            "text": "@ourcompany just saved me 3 hours on my weekly report. This thing is magic.",
+            "sentiment": "positive"
+        },
+        {
+            "platform": "linkedin",
+            "handle": "Bob Smith",
+            "text": "Has anyone used @ourcompany for enterprise-scale campaigns? Looking for feedback before we commit.",
+            "sentiment": "neutral"
+        }
+    ]
+}

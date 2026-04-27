@@ -1,0 +1,330 @@
+# America Voice — Integration Registry
+# Source: AmericaVoice_DataSourceAudit.xlsx (Phase 1 audit)
+# Tracks every data source the agent pipeline reads from or writes to.
+# Status values: connected | not_started | blocked
+# Auth values: api_key | oauth2 | unknown
+# Access values: read_only | write_only | read_write
+
+integrations:
+
+  # ── CRM & SALES ──────────────────────────────────────────────────────────
+  crm_salesforce_hubspot:
+    label: "HubSpot / Salesforce"
+    category: crm_sales
+    sub_category: crm
+    api_available: true
+    auth: api_key
+    access: read_write
+    status: not_started
+    used_by: [lead_generation, customer_engagement]
+    gaps: "Export lead list format; confirm field mapping"
+    env_key: CRM_API_KEY
+
+  apollo:
+    label: "Apollo.io"
+    category: crm_sales
+    sub_category: prospecting
+    api_available: true
+    auth: api_key
+    access: read_only
+    status: not_started
+    used_by: [lead_generation]
+    gaps: "Check plan tier for API access"
+    env_key: APOLLO_API_KEY
+
+  linkedin_sales_nav:
+    label: "LinkedIn Sales Navigator"
+    category: crm_sales
+    sub_category: prospecting
+    api_available: in_progress
+    auth: oauth2
+    access: read_only
+    status: blocked
+    used_by: [lead_generation]
+    gaps: "Requires LinkedIn partner agreement"
+    env_key: LINKEDIN_CLIENT_ID
+
+  outreach_salesloft:
+    label: "Outreach / Salesloft"
+    category: crm_sales
+    sub_category: outreach_sequences
+    api_available: true
+    auth: api_key
+    access: read_write
+    status: not_started
+    used_by: [lead_generation]
+    gaps: null
+    env_key: OUTREACH_API_KEY
+
+  # ── EMAIL & MARKETING ────────────────────────────────────────────────────
+  mailchimp_klaviyo:
+    label: "Mailchimp / Klaviyo"
+    category: email_marketing
+    sub_category: email_platform
+    api_available: true
+    auth: api_key
+    access: read_write
+    status: not_started
+    used_by: [content_creation, customer_engagement]
+    gaps: "Confirm list segmentation structure"
+    env_key: EMAIL_PLATFORM_API_KEY
+
+  google_ads:
+    label: "Google Ads"
+    category: email_marketing
+    sub_category: paid_ads
+    api_available: true
+    auth: oauth2
+    access: read_write
+    status: not_started
+    used_by: [campaign_optimization]
+    gaps: "Need MCC access or sub-account credentials"
+    env_key: GOOGLE_ADS_CLIENT_ID
+
+  meta_ads:
+    label: "Meta Ads Manager"
+    category: email_marketing
+    sub_category: paid_ads
+    api_available: true
+    auth: oauth2
+    access: read_write
+    status: not_started
+    used_by: [campaign_optimization]
+    gaps: "Confirm Business Manager admin access"
+    env_key: META_ADS_CLIENT_ID
+
+  buffer_hootsuite:
+    label: "Buffer / Hootsuite"
+    category: email_marketing
+    sub_category: social_scheduling
+    api_available: true
+    auth: oauth2
+    access: read_write
+    status: not_started
+    used_by: [content_creation, customer_engagement]
+    gaps: null
+    env_key: SOCIAL_SCHEDULER_API_KEY
+
+  # ── ANALYTICS & DATA ─────────────────────────────────────────────────────
+  google_analytics_4:
+    label: "Google Analytics 4"
+    category: analytics
+    sub_category: web_analytics
+    api_available: true
+    auth: oauth2
+    access: read_only
+    status: not_started
+    used_by: [campaign_optimization, strategy_synthesis]
+    gaps: "Confirm GA4 property ID"
+    env_key: GA4_CLIENT_ID
+
+  mixpanel_amplitude:
+    label: "Mixpanel / Amplitude"
+    category: analytics
+    sub_category: product_analytics
+    api_available: true
+    auth: api_key
+    access: read_only
+    status: not_started
+    used_by: [campaign_optimization]
+    gaps: null
+    env_key: PRODUCT_ANALYTICS_API_KEY
+
+  looker_tableau:
+    label: "Looker / Tableau"
+    category: analytics
+    sub_category: bi_reporting
+    api_available: true
+    auth: api_key
+    access: read_only
+    status: not_started
+    used_by: [campaign_optimization, strategy_synthesis]
+    gaps: "Check data freshness cadence"
+    env_key: BI_TOOL_API_KEY
+
+  google_search_console:
+    label: "Google Search Console"
+    category: analytics
+    sub_category: seo
+    api_available: true
+    auth: oauth2
+    access: read_only
+    status: not_started
+    used_by: [market_intelligence]
+    gaps: null
+    env_key: GSC_CLIENT_ID
+
+  # ── CONTENT & SEO ────────────────────────────────────────────────────────
+  semrush_ahrefs:
+    label: "Semrush / Ahrefs"
+    category: content_seo
+    sub_category: seo_tool
+    api_available: true
+    auth: api_key
+    access: read_only
+    status: not_started
+    used_by: [market_intelligence, content_creation]
+    gaps: "Confirm subscription tier for API (Business plan required)"
+    env_key: SEO_TOOL_API_KEY
+
+  wordpress_webflow:
+    label: "WordPress / Webflow"
+    category: content_seo
+    sub_category: cms
+    api_available: true
+    auth: api_key
+    access: read_write
+    status: not_started
+    used_by: [content_creation]
+    gaps: "Agent will publish blog drafts here"
+    env_key: CMS_API_KEY
+
+  canva_figma:
+    label: "Canva / Figma"
+    category: content_seo
+    sub_category: design_tool
+    api_available: true
+    auth: oauth2
+    access: read_only
+    status: not_started
+    used_by: [content_creation]
+    gaps: "Agent reads brand assets only"
+    env_key: DESIGN_TOOL_CLIENT_ID
+
+  # ── INFRASTRUCTURE ───────────────────────────────────────────────────────
+  anthropic:
+    label: "Anthropic API (Claude)"
+    category: infrastructure
+    sub_category: ai_engine
+    api_available: true
+    auth: api_key
+    access: read_write
+    status: connected          # ← ONLY connected integration as of audit
+    used_by: [market_intelligence, content_creation, lead_generation,
+              campaign_optimization, customer_engagement, strategy_synthesis]
+    gaps: null
+    env_key: ANTHROPIC_API_KEY
+
+  zapier_make:
+    label: "Zapier / Make.com"
+    category: infrastructure
+    sub_category: automation
+    api_available: true
+    auth: api_key
+    access: read_write
+    status: not_started
+    used_by: [market_intelligence, lead_generation, strategy_synthesis]
+    gaps: "Used to trigger agent workflows"
+    env_key: AUTOMATION_WEBHOOK_URL
+
+  slack:
+    label: "Slack"
+    category: infrastructure
+    sub_category: team_comms
+    api_available: true
+    auth: oauth2
+    access: write_only
+    status: not_started
+    used_by: [market_intelligence, customer_engagement, strategy_synthesis]
+    gaps: "Agent posts weekly intel digest here"
+    env_key: SLACK_WEBHOOK_URL
+
+  notion:
+    label: "Notion"
+    category: infrastructure
+    sub_category: knowledge_base
+    api_available: true
+    auth: api_key
+    access: read_write
+    status: not_started
+    used_by: [content_creation, strategy_synthesis]
+    gaps: "Upload brand voice doc and define agent read permissions"
+    env_key: NOTION_API_KEY
+
+  # ── APP & CUSTOMER DATA ──────────────────────────────────────────────────
+  av_app_backend:
+    label: "America Voice App Backend"
+    category: app_data
+    sub_category: transaction_data
+    api_available: unknown
+    auth: unknown
+    access: read_only
+    status: blocked
+    used_by: [customer_engagement]
+    gaps: "Engineering team must define data access policy and schema"
+    env_key: AV_BACKEND_API_KEY
+
+  moneygram_dealer_data:
+    label: "MoneyGram Dealer Data"
+    category: app_data
+    sub_category: distribution
+    api_available: unknown
+    auth: unknown
+    access: read_only
+    status: blocked
+    used_by: [market_intelligence]
+    gaps: "Partner agreement may be required"
+    env_key: MONEYGRAM_API_KEY
+
+  app_store_reviews:
+    label: "App Store / Play Store Reviews"
+    category: app_data
+    sub_category: customer_feedback
+    api_available: true
+    auth: api_key
+    access: read_only
+    status: not_started
+    used_by: [market_intelligence]
+    gaps: null
+    env_key: APP_STORE_API_KEY
+
+# ── PRIORITY ACTION ITEMS (from Gaps & Next Steps sheet) ─────────────────
+# Resolve these before Phase 2 launch (Agents 01 & 02)
+priority_gaps:
+  - tool: google_ads
+    priority: high
+    owner: marketing_ops
+    due: "Week 1"
+    action: "Obtain MCC account access or sub-account credentials"
+
+  - tool: meta_ads
+    priority: high
+    owner: marketing_ops
+    due: "Week 1"
+    action: "Confirm Business Manager admin rights for agent OAuth"
+
+  - tool: semrush_ahrefs
+    priority: medium
+    owner: marketing_ops
+    due: "Week 1"
+    action: "Confirm plan tier supports API access (Business plan required)"
+
+  - tool: notion
+    priority: high
+    owner: ai_ops_owner
+    due: "Week 1"
+    action: "Upload brand voice doc and define agent read permissions"
+
+  - tool: linkedin_sales_nav
+    priority: high
+    owner: marketing_ops
+    due: "Week 2"
+    action: "Pursue LinkedIn partner agreement for API access"
+
+  - tool: crm_salesforce_hubspot
+    priority: high
+    owner: marketing_ops
+    due: "Week 2"
+    action: "Map CRM lead fields to agent input schema"
+
+  - tool: av_app_backend
+    priority: high
+    owner: engineering_lead
+    due: "Week 3"
+    action: "Define data access policy and schema for customer transaction history"
+
+  - tool: moneygram_dealer_data
+    priority: medium
+    owner: business_dev
+    due: "Week 4"
+    action: "Pursue partner agreement for dealer distribution data"
