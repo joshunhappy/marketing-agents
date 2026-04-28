@@ -8,6 +8,49 @@ Drop in your brand voice, ICP, and integration credentials and the fleet runs en
 
 ---
 
+## CLI Cheatsheet
+
+Every command accepts `--brand <slug>` (or `BRAND=<slug>` env var) to override the active brand for a single invocation.
+
+**Onboarding**
+```bash
+marketing-agents setup                                # interactive wizard (creates brand, fills configs)
+marketing-agents brand new <slug>                     # create a brand directory from templates
+marketing-agents brand list                           # list all brands, mark active
+marketing-agents brand use <slug>                     # switch active brand
+marketing-agents brand show                           # print active brand slug
+```
+
+**Status & inspection**
+```bash
+marketing-agents brand status                         # readiness check; exit 0 ok / 1 hard blocker / 2 soft gaps
+marketing-agents integrations list                    # all integrations for active brand
+marketing-agents integrations list --status connected # filter by connection status
+marketing-agents integrations list --used-by lead_generation
+marketing-agents integrations list --plain            # TSV output for grep/scripting
+```
+
+**Run the pipeline**
+```bash
+marketing-agents run --input brands/<slug>/input.json           # dry-run (default, safe)
+marketing-agents run --input brands/<slug>/input.json --live    # live writes
+marketing-agents agent <agent_name>                             # single agent
+```
+
+Agent slugs: `market_intelligence`, `content_creation`, `lead_generation`, `campaign_optimization`, `customer_engagement`, `strategy_synthesis`.
+
+**Reset / archive**
+```bash
+marketing-agents reset                                # archive active brand → _archive/<ts>/
+marketing-agents reset --brand <slug>                 # archive a specific brand
+marketing-agents reset --all                          # archive every brand + examples + reports
+marketing-agents reset --yes                          # skip confirmation prompt
+```
+
+`reset` moves data — never deletes. A real human reviews `_archive/<ts>/` and removes it manually.
+
+---
+
 ## Target KPIs
 
 | Metric | Target |
