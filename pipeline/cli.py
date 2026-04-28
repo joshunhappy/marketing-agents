@@ -8,6 +8,7 @@ from pathlib import Path
 
 import typer
 from rich.console import Console
+from rich.table import Table
 
 from pipeline.brand import (
     BrandNotConfigured,
@@ -23,7 +24,9 @@ load_brand_env()
 
 app = typer.Typer(help="Marketing Agent Fleet CLI")
 brand_app = typer.Typer(help="Manage brand directories under brands/")
+integrations_app = typer.Typer(help="Inspect the active brand's integration registry")
 app.add_typer(brand_app, name="brand")
+app.add_typer(integrations_app, name="integrations")
 
 console = Console()
 
@@ -199,3 +202,101 @@ def brand_new(
     if activate:
         console.print(f"[green]✓ Active brand: {slug}[/green]")
     console.print("Next: run `marketing-agents setup` to fill it in.")
+
+
+# ── Integrations ────────────────────────────────────────────────────────────
+
+
+_STATUS_STYLE = {
+    "connected": "[green]connected[/green]",
+    "not_started": "[red]not_started[/red]",
+    "blocked": "[yellow]blocked[/yellow]",
+}
+
+
+@integrations_app.command("list")
+def integrations_list(
+    status: str | None = typer.Option(
+        None, "--status", "-s",
+        help="Filter by status: connected | not_started | blocked",
+    ),
+    used_by: str | None = typer.Option(
+        None, "--used-by", "-u",
+        help="Filter to integrations consumed by a specific agent slug",
+    ),
+    brand: str | None = typer.Option(
+        None, "--brand", "-b", help="Inspect a specific brand instead of the active one"
+    ),
+    plain: bool = typer.Option(
+        False, "--plain", help="TSV output (slug<TAB>status<TAB>used_by<TAB>auth<TAB>env_key) for scripting",
+    ),
+):
+    """List the active brand's integrations with their connection status."""
+    import yaml as _yaml
+    from pipeline.brand import brand_file
+
+    _apply_brand_override(brand)
+    try:
+        path = brand_file("integrations.yaml")
+        active = active_brand()
+    except BrandNotConfigured as e:
+        console.print(f"[yellow]{e}[/yellow]")
+        raise typer.Exit(1) from None
+
+    if not path.exists():
+        console.print(f"[red]No integrations.yaml under brands/{active}/[/red]")
+        raise typer.Exit(1)
+
+    data = _yaml.safe_load(path.read_text()) or {}
+    items: dict = data.get("integrations", {}) or {}
+
+    rows = []
+    for slug, cfg in items.items():
+        cfg = cfg or {}
+        if status and cfg.get("status") != status:
+            continue
+        if used_by and used_by not in (cfg.get("used_by") or []):
+            continue
+        rows.append((slug, cfg))
+
+    if plain:
+        for slug, cfg in rows:
+            print(
+                "\t".join([
+                    slug,
+                    cfg.get("status", ""),
+                    ",".join(cfg.get("used_by") or []),
+                    cfg.get("auth", ""),
+                    cfg.get("env_key", ""),
+                ])
+            )
+        return
+
+    title = f"Integrations — brand '{active}'"
+    if status or used_by:
+        bits = []
+        if status:
+            bits.append(f"status={status}")
+        if used_by:
+            bits.append(f"used_by={used_by}")
+        title += f"  ({', '.join(bits)})"
+
+    table = Table(title=title, show_lines=False)
+    table.add_column("Slug", style="bold")
+    table.add_column("Status")
+    table.add_column("Used by", style="dim")
+    table.add_column("Auth", style="dim")
+    table.add_column("Env key", style="cyan")
+    table.add_column("Label", style="dim")
+    for slug, cfg in rows:
+        st = cfg.get("status", "?")
+        table.add_row(
+            slug,
+            _STATUS_STYLE.get(st, st),
+            ", ".join(cfg.get("used_by") or []) or "—",
+            cfg.get("auth", "—"),
+            cfg.get("env_key", "—"),
+            cfg.get("label", ""),
+        )
+    console.print(table)
+    console.print(f"[dim]{len(rows)}/{len(items)} integration(s) shown[/dim]")

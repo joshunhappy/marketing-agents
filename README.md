@@ -271,6 +271,13 @@ marketing-agents brand status              # readiness check (one-shot, exit cod
 
 `brand status` is the non-interactive equivalent of the wizard's `r` option — useful in CI or just from the shell. Exit codes: `0` = all 6 agents can run live, `1` = hard blocker, `2` = soft gaps only.
 
+```bash
+marketing-agents integrations list                       # all integrations for active brand
+marketing-agents integrations list --status connected    # filter by connection status
+marketing-agents integrations list --used-by lead_generation
+marketing-agents integrations list --plain               # tab-separated, scripting-friendly
+```
+
 ### Fill in your brand — interactive wizard
 
 The fastest path is the built-in setup wizard. It scopes everything to the active brand and only re-prompts for the parts that still need attention.
