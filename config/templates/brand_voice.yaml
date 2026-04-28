@@ -2,7 +2,7 @@
 # Populate this file with your brand's voice, tone, and messaging guardrails.
 # Used by the Content Creation and Customer Engagement agents to stay on-brand.
 #
-# A fully populated example lives at examples/americavoice/brand_voice.yaml.
+# A fully populated example lives at brands/americavoice/brand_voice.yaml.
 
 brand:
   name: "{{BRAND_NAME}}"

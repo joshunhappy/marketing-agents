@@ -156,6 +156,27 @@ def brand_show():
         raise typer.Exit(1) from None
 
 
+@brand_app.command("status")
+def brand_status(
+    brand: str | None = typer.Option(
+        None, "--brand", "-b", help="Check a specific brand instead of the active one"
+    ),
+):
+    """Print the readiness check (materials + per-agent runnability) for the active brand.
+
+    Exit code: 0 = all agents can run live, 1 = hard blocker, 2 = soft gaps only.
+    """
+    _apply_brand_override(brand)
+    try:
+        active_brand()
+    except BrandNotConfigured as e:
+        console.print(f"[yellow]{e}[/yellow]")
+        raise typer.Exit(1) from None
+    from pipeline.setup_wizard import readiness_report
+
+    raise typer.Exit(readiness_report())
+
+
 @brand_app.command("use")
 def brand_use(slug: str = typer.Argument(help="Slug of the brand to activate")):
     """Set the active brand."""

@@ -4,7 +4,7 @@ A brand-agnostic scaffold for a fleet of 6 specialized Claude AI agents that ope
 
 Drop in your brand voice, ICP, and integration credentials and the fleet runs end-to-end against your data.
 
-> **Reference implementation:** a fully populated configuration for a real business (America Voice — B2C fintech/telecom) lives at [`examples/americavoice/`](examples/americavoice/README.md). Use it to see what a completed `brand_voice.yaml`, `icp.yaml`, `integrations.yaml`, and pipeline `input.json` look like when filled in from a real brand guide.
+> **First brand using this fleet:** [America Voice](brands/americavoice/) — a B2C fintech/telecom service that lets US and Canada migrants send mobile top-ups and recharges to family in 100+ countries. The full configuration lives at `brands/americavoice/`. New brands can crib from it as a worked example of how to fill out `brand_voice.yaml`, `icp.yaml`, `integrations.yaml`, and `input.json`.
 
 ---
 
@@ -204,21 +204,16 @@ marketing-agents/
 │       ├── icp.yaml
 │       └── integrations.yaml
 │
-├── brands/                          # One subdirectory per brand (created via `brand new`)
-│   └── <slug>/
+├── brands/                          # One subdirectory per brand
+│   └── americavoice/                # First production brand — B2C fintech/telecom
 │       ├── .env                     # Brand-specific secrets (gitignored)
-│       ├── brand_voice.yaml
-│       ├── icp.yaml
-│       ├── integrations.yaml
-│       └── input.json               # Pipeline inputs for this brand
+│       ├── brand_voice.yaml         # Warm/clear/reliable/empowering voice, bilingual EN/ES
+│       ├── icp.yaml                 # 'The Migrant Provider' persona + reseller persona
+│       ├── integrations.yaml        # Phase 1 audit registry (22 integrations)
+│       └── input.json               # Realistic pipeline input
 │
 ├── examples/
-│   └── americavoice/                # Fully populated reference brand
-│       ├── README.md                # How this reference is organized
-│       ├── brand_voice.yaml
-│       ├── icp.yaml
-│       ├── integrations.yaml
-│       └── input.json               # Realistic pipeline input
+│   └── input.json                   # Generic B2B SaaS starter input — copied into new brand dirs
 │
 ├── tests/
 │   └── test_agents.py               # Pytest tests for AgentResult and config loading
@@ -271,7 +266,10 @@ marketing-agents brand new acmecorp        # create + activate
 marketing-agents brand list                # list all brands, mark active
 marketing-agents brand use otherbrand      # switch active brand
 marketing-agents brand show                # print active brand slug
+marketing-agents brand status              # readiness check (one-shot, exit code reflects state)
 ```
+
+`brand status` is the non-interactive equivalent of the wizard's `r` option — useful in CI or just from the shell. Exit codes: `0` = all 6 agents can run live, `1` = hard blocker, `2` = soft gaps only.
 
 ### Fill in your brand — interactive wizard
 
@@ -292,7 +290,7 @@ The wizard covers (all paths under `brands/<active>/`):
 
 It also has a **readiness check** (`r`) that reports per-agent runnability: which of the 6 agents can run live with your current setup, and exactly what's missing for each one.
 
-> **Manual setup:** if you'd rather edit YAML by hand, see [`examples/americavoice/`](examples/americavoice/README.md) for a fully populated reference and copy the patterns into `brands/<your-slug>/`.
+> **Manual setup:** if you'd rather edit YAML by hand, see [`brands/americavoice/`](brands/americavoice/) for a fully populated brand and copy the patterns into your own `brands/<slug>/`.
 
 ### Verify setup
 
@@ -316,8 +314,8 @@ All agents run but no emails are sent, no ads are adjusted, and no CRM records a
 # Run the full pipeline against the active brand's input
 marketing-agents run --input brands/<slug>/input.json
 
-# Or against the America Voice reference
-marketing-agents run --input examples/americavoice/input.json --brand americavoice
+# Or against the America Voice brand
+marketing-agents run --brand americavoice --input brands/americavoice/input.json
 
 # Run a single agent for the active brand
 marketing-agents agent market_intelligence
@@ -359,7 +357,7 @@ export PIPELINE_DRY_RUN=false
 
 ### Input file format
 
-The pipeline input is a single JSON document with the following top-level keys. See `examples/input.json` for a working version and `examples/americavoice/input.json` for a fully realistic one.
+The pipeline input is a single JSON document with the following top-level keys. See `examples/input.json` for the generic starter and `brands/americavoice/input.json` for a fully realistic one.
 
 ```json
 {

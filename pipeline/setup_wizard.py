@@ -305,7 +305,7 @@ def step_brand_voice() -> None:
     console.rule(f"[bold]Step 2 · Brand Voice for '{active_brand()}'[/bold]")
     console.print(
         "[dim]Used by Content Creation and Customer Engagement agents. "
-        "Reference example at examples/americavoice/brand_voice.yaml.[/dim]\n"
+        "See brands/americavoice/brand_voice.yaml for a fully populated example.[/dim]\n"
     )
 
     if not _confirm_overwrite(bv_path):
@@ -424,7 +424,7 @@ def step_icp() -> None:
     console.rule(f"[bold]Step 3 · Ideal Customer Profile for '{active_brand()}'[/bold]")
     console.print(
         "[dim]Used by Lead Generation and Market Intelligence agents. "
-        "Reference example at examples/americavoice/icp.yaml.[/dim]\n"
+        "See brands/americavoice/icp.yaml for a fully populated example.[/dim]\n"
     )
 
     if not _confirm_overwrite(icp_path):
@@ -616,8 +616,10 @@ def step_pipeline_input() -> None:
 # ── Readiness check ─────────────────────────────────────────────────────────
 
 
-def step_readiness() -> None:
-    console.rule("[bold]Readiness Check[/bold]")
+def readiness_report() -> int:
+    """Print the readiness check for the active brand. Returns shell exit code:
+    0 = all agents can run live, 1 = hard blocker present, 2 = soft gaps only."""
+    console.rule(f"[bold]Readiness Check — brand '{active_brand()}'[/bold]")
     console.print(render_status_table(all_statuses()))
 
     paths = _paths()
@@ -678,7 +680,7 @@ def step_readiness() -> None:
         console.print("\n[bold red]Hard blockers — pipeline cannot start:[/bold red]")
         for b in hard_blockers:
             console.print(f"  • {b}")
-        return
+        return 1
 
     if runnable_count == 0:
         console.print(
@@ -689,16 +691,22 @@ def step_readiness() -> None:
             "[dim]Dry-run mode runs all enabled agents anyway, useful for testing "
             "with example inputs.[/dim]"
         )
-        return
+        return 2
 
     if runnable_count < len(AGENT_REQUIREMENTS):
         console.print(
             f"\n[bold yellow]{runnable_count}/{len(AGENT_REQUIREMENTS)} agents can run live.[/bold yellow] "
             "The pipeline will skip the rest in live mode (or run all in dry-run)."
         )
-        return
+        return 2
 
     console.print("\n[bold green]All agents can run live.[/bold green]")
+    return 0
+
+
+def step_readiness() -> None:
+    """Wizard wrapper — runs the readiness report and ignores its exit code."""
+    readiness_report()
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────

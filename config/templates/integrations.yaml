@@ -7,7 +7,7 @@
 #
 # Only `anthropic` ships as `connected`. Flip the others to `connected` as you
 # wire them up. A fully populated example lives at
-# examples/americavoice/integrations.yaml.
+# brands/americavoice/integrations.yaml.
 
 integrations:
 

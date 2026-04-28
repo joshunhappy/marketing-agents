@@ -2,7 +2,7 @@
 # Populate with the persona(s) your marketing engine should target.
 # Used by the Lead Generation and Market Intelligence agents.
 #
-# A fully populated example lives at examples/americavoice/icp.yaml.
+# A fully populated example lives at brands/americavoice/icp.yaml.
 # Note: this template is written for either B2B or B2C — remove the fields
 # that don't apply (e.g. drop `company_size` for B2C, drop `origin_countries`
 # for B2B).
