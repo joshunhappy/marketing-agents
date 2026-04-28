@@ -16,11 +16,28 @@ from rich.console import Console
 
 console = Console()
 
+ROOT = Path(__file__).parent.parent
+
 
 def _load_settings() -> dict:
-    path = Path(__file__).parent.parent / "config" / "settings.yaml"
+    path = ROOT / "config" / "settings.yaml"
     with open(path) as f:
         return yaml.safe_load(f)
+
+
+def _brand_slug() -> str:
+    """Return the active brand slug for output paths.
+
+    Resolves via pipeline.brand.active_brand() (BRAND env var → .active-brand
+    file → single brand under brands/). Falls back to 'unconfigured' if no
+    brand is set.
+    """
+    from pipeline.brand import BrandNotConfigured, active_brand
+
+    try:
+        return active_brand()
+    except BrandNotConfigured:
+        return "unconfigured"
 
 
 SETTINGS = _load_settings()
@@ -46,9 +63,9 @@ class AgentResult:
         }
 
     def save(self, output_dir: str = "reports") -> Path:
-        """Persist the result to disk as JSON and Markdown."""
-        out = Path(output_dir)
-        out.mkdir(exist_ok=True)
+        """Persist the result to disk as JSON and Markdown under reports/<brand>/."""
+        out = Path(output_dir) / _brand_slug()
+        out.mkdir(parents=True, exist_ok=True)
         slug = self.agent_name.replace(" ", "_").lower()
         date = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 

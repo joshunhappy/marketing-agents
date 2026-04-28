@@ -28,9 +28,10 @@ class TestAgentResult:
         )
         json_path = result.save(output_dir=str(tmp_path))
         assert json_path.exists()
+        # Reports are nested under reports/<brand>/
+        assert json_path.parent.parent == tmp_path
         md_path = json_path.with_suffix(".md")
-        # There should be a corresponding .md file
-        assert any(p.suffix == ".md" for p in tmp_path.iterdir())
+        assert md_path.exists()
 
 
 class TestBaseAgentConfig:

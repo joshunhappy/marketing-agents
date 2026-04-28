@@ -3,6 +3,12 @@
 .env.*
 !.env.example
 
+# Per-brand secrets (each brand has its own .env)
+brands/*/.env
+
+# Active brand pointer is per-developer, not committed
+.active-brand
+
 # Python
 __pycache__/
 *.py[cod]
@@ -20,6 +26,9 @@ build/
 # Reports (agent outputs — store locally, not in git)
 reports/*
 !reports/.gitkeep
+
+# Archived data from `marketing-agents reset` (kept for human review only)
+_archive/
 
 # Logs
 logs/

@@ -1,13 +1,14 @@
 """Interactive setup wizard for the Marketing Agents project.
 
-Run via `marketing-agents setup` (or `python -m pipeline.setup_wizard`).
-Walks the user through every material required to start the project:
+Run via `marketing-agents setup`. Walks the user through every material
+required to start the project, scoped to the active brand:
 
-  1. API keys              (.env)
-  2. Brand voice           (config/brand_voice.yaml)
-  3. ICP                   (config/icp.yaml)
-  4. Integrations          (config/integrations.yaml — connection statuses)
-  5. Pipeline input        (examples/input.json — copy of starter payload)
+  0. Active brand          (brands/<slug>/)
+  1. API keys              (brands/<slug>/.env)
+  2. Brand voice           (brands/<slug>/brand_voice.yaml)
+  3. ICP                   (brands/<slug>/icp.yaml)
+  4. Integrations          (brands/<slug>/integrations.yaml)
+  5. Pipeline input        (brands/<slug>/input.json)
 
 Each step detects whether the file is template/blank/filled and only re-prompts
 the parts that still need attention. Existing values are never silently overwritten.
@@ -28,16 +29,34 @@ from rich.panel import Panel
 from rich.prompt import Confirm, IntPrompt, Prompt
 from rich.table import Table
 
+from agents.requirements import AGENT_REQUIREMENTS, agent_runnability, connected_integrations
+from pipeline.brand import (
+    BrandNotConfigured,
+    active_brand,
+    brand_dir,
+    init_brand,
+    list_brands,
+    set_active_brand,
+    slugify,
+)
+
 ROOT = Path(__file__).resolve().parent.parent
-ENV_PATH = ROOT / ".env"
 ENV_EXAMPLE_PATH = ROOT / ".env.example"
-BRAND_VOICE_PATH = ROOT / "config" / "brand_voice.yaml"
-ICP_PATH = ROOT / "config" / "icp.yaml"
-INTEGRATIONS_PATH = ROOT / "config" / "integrations.yaml"
-PIPELINE_INPUT_PATH = ROOT / "examples" / "input.json"
-PIPELINE_INPUT_TARGET = ROOT / "input.json"
+EXAMPLE_INPUT_PATH = ROOT / "examples" / "input.json"
 
 PLACEHOLDER_RE = re.compile(r"\{\{[^}]+\}\}")
+
+
+def _paths() -> dict[str, Path]:
+    """Return the file paths for the active brand. Raises BrandNotConfigured if none."""
+    bdir = brand_dir()
+    return {
+        "env": bdir / ".env",
+        "brand_voice": bdir / "brand_voice.yaml",
+        "icp": bdir / "icp.yaml",
+        "integrations": bdir / "integrations.yaml",
+        "input": bdir / "input.json",
+    }
 
 console = Console()
 
@@ -54,21 +73,31 @@ class MaterialStatus:
 
 
 def env_status() -> MaterialStatus:
-    if not ENV_PATH.exists():
-        return MaterialStatus("env", "API Keys (.env)", "missing", ".env file does not exist")
-    values = _parse_env(ENV_PATH)
-    anthropic = values.get("ANTHROPIC_API_KEY", "").strip()
-    if not anthropic or anthropic.startswith("sk-ant-...") or anthropic == "":
-        return MaterialStatus("env", "API Keys (.env)", "missing", "ANTHROPIC_API_KEY not set")
+    paths = _paths()
+    env_path = paths["env"]
+    if not env_path.exists():
+        # Brand-specific .env may be missing while a shared root .env supplies the key.
+        root_env = ROOT / ".env"
+        if root_env.exists() and _parse_env(root_env).get("ANTHROPIC_API_KEY", "").strip():
+            return MaterialStatus("env", "API Keys", "partial", "shared .env only — no brand .env")
+        return MaterialStatus("env", "API Keys", "missing", "brand .env does not exist")
+    values = _parse_env(env_path)
+    anthropic_key = values.get("ANTHROPIC_API_KEY", "").strip()
+    if (not anthropic_key or anthropic_key.startswith("sk-ant-...")):
+        # Fall back to root .env for shared key.
+        root_vals = _parse_env(ROOT / ".env")
+        anthropic_key = root_vals.get("ANTHROPIC_API_KEY", "").strip()
+    if not anthropic_key or anthropic_key.startswith("sk-ant-..."):
+        return MaterialStatus("env", "API Keys", "missing", "ANTHROPIC_API_KEY not set")
     blanks = [k for k, v in values.items() if not v.strip()]
     if blanks:
         return MaterialStatus(
             "env",
-            "API Keys (.env)",
+            "API Keys",
             "partial",
             f"Anthropic OK; {len(blanks)} other key(s) blank",
         )
-    return MaterialStatus("env", "API Keys (.env)", "filled", "all keys populated")
+    return MaterialStatus("env", "API Keys", "filled", "all keys populated")
 
 
 def _yaml_status(path: Path, label: str, key: str) -> MaterialStatus:
@@ -82,9 +111,10 @@ def _yaml_status(path: Path, label: str, key: str) -> MaterialStatus:
 
 
 def integrations_status() -> MaterialStatus:
-    if not INTEGRATIONS_PATH.exists():
+    path = _paths()["integrations"]
+    if not path.exists():
         return MaterialStatus("integrations", "Integrations", "missing", "file missing")
-    data = yaml.safe_load(INTEGRATIONS_PATH.read_text()) or {}
+    data = yaml.safe_load(path.read_text()) or {}
     items = data.get("integrations", {}) or {}
     total = len(items)
     connected = sum(1 for v in items.values() if (v or {}).get("status") == "connected")
@@ -100,25 +130,25 @@ def integrations_status() -> MaterialStatus:
 
 
 def pipeline_input_status() -> MaterialStatus:
-    if PIPELINE_INPUT_TARGET.exists():
-        return MaterialStatus(
-            "input", "Pipeline Input", "filled", f"{PIPELINE_INPUT_TARGET.name} ready"
-        )
-    if PIPELINE_INPUT_PATH.exists():
+    target = _paths()["input"]
+    if target.exists():
+        return MaterialStatus("input", "Pipeline Input", "filled", f"{target.name} ready")
+    if EXAMPLE_INPUT_PATH.exists():
         return MaterialStatus(
             "input",
             "Pipeline Input",
             "partial",
-            "example available, not yet copied to project root",
+            "example available, not yet copied to brand directory",
         )
     return MaterialStatus("input", "Pipeline Input", "missing", "no input file found")
 
 
 def all_statuses() -> list[MaterialStatus]:
+    paths = _paths()
     return [
         env_status(),
-        _yaml_status(BRAND_VOICE_PATH, "Brand Voice", "brand_voice"),
-        _yaml_status(ICP_PATH, "Ideal Customer Profile", "icp"),
+        _yaml_status(paths["brand_voice"], "Brand Voice", "brand_voice"),
+        _yaml_status(paths["icp"], "Ideal Customer Profile", "icp"),
         integrations_status(),
         pipeline_input_status(),
     ]
@@ -143,16 +173,21 @@ def render_status_table(statuses: list[MaterialStatus]) -> Table:
 
 def render_menu() -> None:
     console.print()
-    console.print(
-        Panel.fit(
-            "[bold]Marketing Agents — Setup Wizard[/bold]\n"
-            "Work through each material until every row is [green]✓[/green].",
-            border_style="cyan",
-        )
+    try:
+        slug = active_brand()
+    except BrandNotConfigured:
+        slug = None
+    header = (
+        f"[bold]Marketing Agents — Setup Wizard[/bold]\n"
+        f"Active brand: [cyan]{slug or '— none — pick 0 to create one'}[/cyan]\n"
+        "Work through each material until every row is [green]✓[/green]."
     )
-    console.print(render_status_table(all_statuses()))
+    console.print(Panel.fit(header, border_style="cyan"))
+    if slug:
+        console.print(render_status_table(all_statuses()))
     console.print(
-        "\nChoose a material to set up, or [bold]r[/bold] for readiness check, [bold]q[/bold] to quit."
+        "\n[bold]0[/bold] = brand · [bold]1–5[/bold] = setup steps · "
+        "[bold]r[/bold] = readiness · [bold]q[/bold] = quit"
     )
 
 
@@ -219,12 +254,13 @@ ENV_KEY_HELP = {
 
 
 def step_env() -> None:
-    console.rule("[bold]Step 1 · API Keys (.env)[/bold]")
-    if not ENV_PATH.exists() and ENV_EXAMPLE_PATH.exists():
-        shutil.copy(ENV_EXAMPLE_PATH, ENV_PATH)
-        console.print(f"[dim]Created {ENV_PATH.name} from .env.example[/dim]")
+    console.rule(f"[bold]Step 1 · API Keys for brand '{active_brand()}'[/bold]")
+    env_path = _paths()["env"]
+    if not env_path.exists() and ENV_EXAMPLE_PATH.exists():
+        shutil.copy(ENV_EXAMPLE_PATH, env_path)
+        console.print(f"[dim]Created {env_path.relative_to(ROOT)} from .env.example[/dim]")
 
-    values = _parse_env(ENV_PATH)
+    values = _parse_env(env_path)
     template_keys = list(_parse_env(ENV_EXAMPLE_PATH).keys()) or list(values.keys())
 
     only_required = Confirm.ask(
@@ -249,8 +285,8 @@ def step_env() -> None:
         new_val = Prompt.ask(f"  {key}", default=current, password=key.endswith(("KEY", "TOKEN", "SECRET")))
         values[key] = new_val.strip()
 
-    _write_env(values, ENV_PATH)
-    console.print(f"[green]✓ Saved {ENV_PATH.name}[/green]")
+    _write_env(values, env_path)
+    console.print(f"[green]✓ Saved {env_path.relative_to(ROOT)}[/green]")
 
 
 def _mask(value: str) -> str:
@@ -265,13 +301,14 @@ def _mask(value: str) -> str:
 
 
 def step_brand_voice() -> None:
-    console.rule("[bold]Step 2 · Brand Voice[/bold]")
+    bv_path = _paths()["brand_voice"]
+    console.rule(f"[bold]Step 2 · Brand Voice for '{active_brand()}'[/bold]")
     console.print(
         "[dim]Used by Content Creation and Customer Engagement agents. "
         "Reference example at examples/americavoice/brand_voice.yaml.[/dim]\n"
     )
 
-    if not _confirm_overwrite(BRAND_VOICE_PATH):
+    if not _confirm_overwrite(bv_path):
         return
 
     name = Prompt.ask("Brand name")
@@ -368,7 +405,7 @@ def step_brand_voice() -> None:
     }
 
     _write_yaml(
-        BRAND_VOICE_PATH,
+        bv_path,
         data,
         header=(
             "# Brand Voice Guidelines\n"
@@ -376,20 +413,21 @@ def step_brand_voice() -> None:
             "# Used by Content Creation and Customer Engagement agents.\n"
         ),
     )
-    console.print(f"[green]✓ Saved {BRAND_VOICE_PATH.relative_to(ROOT)}[/green]")
+    console.print(f"[green]✓ Saved {bv_path.relative_to(ROOT)}[/green]")
 
 
 # ── Step 3: ICP ─────────────────────────────────────────────────────────────
 
 
 def step_icp() -> None:
-    console.rule("[bold]Step 3 · Ideal Customer Profile[/bold]")
+    icp_path = _paths()["icp"]
+    console.rule(f"[bold]Step 3 · Ideal Customer Profile for '{active_brand()}'[/bold]")
     console.print(
         "[dim]Used by Lead Generation and Market Intelligence agents. "
         "Reference example at examples/americavoice/icp.yaml.[/dim]\n"
     )
 
-    if not _confirm_overwrite(ICP_PATH):
+    if not _confirm_overwrite(icp_path):
         return
 
     audience = Prompt.ask("Audience type", choices=["b2b", "b2c"], default="b2b")
@@ -470,7 +508,7 @@ def step_icp() -> None:
     }
 
     _write_yaml(
-        ICP_PATH,
+        icp_path,
         data,
         header=(
             "# Ideal Customer Profile (ICP)\n"
@@ -478,20 +516,21 @@ def step_icp() -> None:
             "# Used by Lead Generation and Market Intelligence agents.\n"
         ),
     )
-    console.print(f"[green]✓ Saved {ICP_PATH.relative_to(ROOT)}[/green]")
+    console.print(f"[green]✓ Saved {icp_path.relative_to(ROOT)}[/green]")
 
 
 # ── Step 4: Integrations ────────────────────────────────────────────────────
 
 
 def step_integrations() -> None:
-    console.rule("[bold]Step 4 · Integrations[/bold]")
+    int_path = _paths()["integrations"]
+    console.rule(f"[bold]Step 4 · Integrations for '{active_brand()}'[/bold]")
     console.print(
-        "[dim]Mark each external tool as connected once its API key is in .env "
+        "[dim]Mark each external tool as connected once its API key is in this brand's .env "
         "and you've verified the connection. anthropic must be connected for any agent to run.[/dim]\n"
     )
 
-    text = INTEGRATIONS_PATH.read_text()
+    text = int_path.read_text()
     data = yaml.safe_load(text) or {}
     items = data.get("integrations", {}) or {}
 
@@ -535,8 +574,8 @@ def step_integrations() -> None:
         st = (items[key] or {}).get("status", "?")
         console.print(f"  [green]Updated[/green] {key} → {st}")
 
-    INTEGRATIONS_PATH.write_text(text)
-    console.print(f"[green]✓ Saved {INTEGRATIONS_PATH.relative_to(ROOT)}[/green]")
+    int_path.write_text(text)
+    console.print(f"[green]✓ Saved {int_path.relative_to(ROOT)}[/green]")
 
 
 def _replace_status(text: str, key: str, new_status: str) -> str:
@@ -552,27 +591,26 @@ def _replace_status(text: str, key: str, new_status: str) -> str:
 
 
 def step_pipeline_input() -> None:
-    console.rule("[bold]Step 5 · Pipeline Input[/bold]")
+    target = _paths()["input"]
+    console.rule(f"[bold]Step 5 · Pipeline Input for '{active_brand()}'[/bold]")
     console.print(
         "[dim]The pipeline reads its inputs from a JSON file. Start from the example "
         "and tailor competitor URLs, leads, campaign data, etc.[/dim]\n"
     )
 
-    if PIPELINE_INPUT_TARGET.exists():
-        console.print(f"[green]✓ {PIPELINE_INPUT_TARGET.name} already exists at project root.[/green]")
+    if target.exists():
+        console.print(f"[green]✓ {target.relative_to(ROOT)} already exists.[/green]")
         if not Confirm.ask("Overwrite it from the example?", default=False):
             return
 
-    if not PIPELINE_INPUT_PATH.exists():
-        console.print(f"[red]Example file missing at {PIPELINE_INPUT_PATH}[/red]")
+    if not EXAMPLE_INPUT_PATH.exists():
+        console.print(f"[red]Example file missing at {EXAMPLE_INPUT_PATH}[/red]")
         return
 
-    shutil.copy(PIPELINE_INPUT_PATH, PIPELINE_INPUT_TARGET)
-    console.print(
-        f"[green]✓ Copied example to {PIPELINE_INPUT_TARGET.relative_to(ROOT)}[/green]"
-    )
+    shutil.copy(EXAMPLE_INPUT_PATH, target)
+    console.print(f"[green]✓ Copied example to {target.relative_to(ROOT)}[/green]")
     console.print("  Edit it to swap in your real competitors, leads, campaign data.")
-    console.print("  Then run: [bold]marketing-agents run --input input.json[/bold]")
+    console.print(f"  Then run: [bold]marketing-agents run --input {target.relative_to(ROOT)}[/bold]")
 
 
 # ── Readiness check ─────────────────────────────────────────────────────────
@@ -580,21 +618,87 @@ def step_pipeline_input() -> None:
 
 def step_readiness() -> None:
     console.rule("[bold]Readiness Check[/bold]")
-    statuses = all_statuses()
-    console.print(render_status_table(statuses))
-    blockers = [s for s in statuses if s.state == "missing"]
-    soft = [s for s in statuses if s.state == "partial"]
-    if not blockers and not soft:
-        console.print("\n[bold green]All set. The pipeline can run live.[/bold green]")
+    console.print(render_status_table(all_statuses()))
+
+    paths = _paths()
+    bdir = brand_dir()
+
+    # ── Hard blockers (must be true for the project to start at all) ────────
+    hard_blockers: list[str] = []
+
+    def _real(val: str) -> bool:
+        return bool(val) and not val.startswith("sk-ant-...")
+
+    # Anthropic key may live in shared root .env or brand .env (brand wins if real).
+    brand_anth = _parse_env(paths["env"]).get("ANTHROPIC_API_KEY", "").strip()
+    root_anth = _parse_env(ROOT / ".env").get("ANTHROPIC_API_KEY", "").strip()
+    if not (_real(brand_anth) or _real(root_anth)):
+        hard_blockers.append("ANTHROPIC_API_KEY missing (every agent needs it)")
+    integrations_data = (
+        yaml.safe_load(paths["integrations"].read_text()) if paths["integrations"].exists() else {}
+    )
+    connected = connected_integrations(integrations_data)
+    if "anthropic" not in connected:
+        hard_blockers.append("anthropic integration not marked connected in integrations.yaml")
+
+    # ── Per-agent runnability ───────────────────────────────────────────────
+    filled_configs: set[str] = set()
+    for name in ("brand_voice", "icp"):
+        path = bdir / f"{name}.yaml"
+        if path.exists() and not PLACEHOLDER_RE.search(path.read_text()):
+            filled_configs.add(name)
+
+    table = Table(title="\nPer-Agent Runnability", show_lines=False)
+    table.add_column("Agent", style="bold")
+    table.add_column("Live", width=6)
+    table.add_column("Required missing", style="red")
+    table.add_column("Optional missing", style="dim")
+
+    runnable_count = 0
+    for slug in AGENT_REQUIREMENTS:
+        report = agent_runnability(slug, connected, filled_configs)
+        live_glyph = "[green]✓[/green]" if report["can_run"] else "[red]✗[/red]"
+        if report["can_run"]:
+            runnable_count += 1
+        missing_required = []
+        if report["missing_required_any"]:
+            missing_required.append("any of: " + ", ".join(report["missing_required_any"]))
+        if report["missing_required_configs"]:
+            missing_required.append("config: " + ", ".join(report["missing_required_configs"]))
+        table.add_row(
+            slug,
+            live_glyph,
+            "; ".join(missing_required) or "—",
+            ", ".join(report["missing_optional"]) or "—",
+        )
+    console.print(table)
+
+    # ── Verdict ─────────────────────────────────────────────────────────────
+    if hard_blockers:
+        console.print("\n[bold red]Hard blockers — pipeline cannot start:[/bold red]")
+        for b in hard_blockers:
+            console.print(f"  • {b}")
         return
-    if blockers:
-        console.print("\n[bold red]Blockers — must resolve before running:[/bold red]")
-        for s in blockers:
-            console.print(f"  • {s.label} — {s.detail}")
-    if soft:
-        console.print("\n[bold yellow]Soft gaps — pipeline can run in dry-run, fill before going live:[/bold yellow]")
-        for s in soft:
-            console.print(f"  • {s.label} — {s.detail}")
+
+    if runnable_count == 0:
+        console.print(
+            "\n[bold red]No agents can run live.[/bold red] Connect at least one "
+            "integration per agent or fill brand_voice / icp."
+        )
+        console.print(
+            "[dim]Dry-run mode runs all enabled agents anyway, useful for testing "
+            "with example inputs.[/dim]"
+        )
+        return
+
+    if runnable_count < len(AGENT_REQUIREMENTS):
+        console.print(
+            f"\n[bold yellow]{runnable_count}/{len(AGENT_REQUIREMENTS)} agents can run live.[/bold yellow] "
+            "The pipeline will skip the rest in live mode (or run all in dry-run)."
+        )
+        return
+
+    console.print("\n[bold green]All agents can run live.[/bold green]")
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
@@ -625,10 +729,64 @@ def _write_yaml(path: Path, data: dict, header: str = "") -> None:
     path.write_text(header + body)
 
 
+# ── Step 0: Brand selection ─────────────────────────────────────────────────
+
+
+def step_brand() -> None:
+    console.rule("[bold]Step 0 · Active Brand[/bold]")
+    brands = list_brands()
+    try:
+        current = active_brand()
+    except BrandNotConfigured:
+        current = None
+
+    if brands:
+        table = Table(show_lines=False)
+        table.add_column("#", width=3)
+        table.add_column("Brand")
+        table.add_column("Active", width=8)
+        for i, b in enumerate(brands, 1):
+            table.add_row(str(i), b, "[green]✓[/green]" if b == current else "")
+        console.print(table)
+
+    console.print(
+        "\nOptions: [bold]<#>[/bold] switch · [bold]n[/bold] new brand · "
+        "[bold]b[/bold] back to menu"
+    )
+    choice = Prompt.ask("Select", default="n" if not brands else "b").strip()
+
+    if choice == "b":
+        return
+    if choice == "n" or (not brands):
+        name = Prompt.ask("Brand name (e.g. 'Acme Corp')")
+        slug = slugify(name)
+        if not slug:
+            console.print("[red]Brand name must contain alphanumeric characters.[/red]")
+            return
+        if slug in brands:
+            console.print(f"[yellow]Brand '{slug}' already exists — switching to it.[/yellow]")
+            set_active_brand(slug)
+            return
+        path = init_brand(slug, set_active=True)
+        console.print(
+            f"[green]✓ Created brand '{slug}' at {path.relative_to(ROOT)}/[/green]"
+        )
+        # Pre-fill brand name into brand_voice.yaml so step 2 has a head start.
+        bv = path / "brand_voice.yaml"
+        bv.write_text(bv.read_text().replace("{{BRAND_NAME}}", name))
+        return
+    if choice.isdigit() and 1 <= int(choice) <= len(brands):
+        set_active_brand(brands[int(choice) - 1])
+        console.print(f"[green]✓ Active brand: {brands[int(choice) - 1]}[/green]")
+        return
+    console.print("[red]Invalid choice.[/red]")
+
+
 # ── Main loop ───────────────────────────────────────────────────────────────
 
 
 STEPS: dict[str, tuple[str, Callable[[], None]]] = {
+    "0": ("Active brand", step_brand),
     "1": ("API Keys (.env)", step_env),
     "2": ("Brand Voice", step_brand_voice),
     "3": ("Ideal Customer Profile", step_icp),
@@ -638,17 +796,30 @@ STEPS: dict[str, tuple[str, Callable[[], None]]] = {
 
 
 def run_wizard() -> None:
+    # Force brand selection on first launch if none configured.
+    try:
+        active_brand()
+    except BrandNotConfigured:
+        console.print("[yellow]No brand configured yet — let's create one.[/yellow]")
+        step_brand()
+
     while True:
         render_menu()
-        choice = Prompt.ask(
-            "Select",
-            choices=[*STEPS.keys(), "r", "q"],
-            default="1",
-        )
+        try:
+            active_brand()
+            has_brand = True
+        except BrandNotConfigured:
+            has_brand = False
+
+        valid = ["0", "r", "q"] + ([*"12345"] if has_brand else [])
+        choice = Prompt.ask("Select", choices=valid, default="0" if not has_brand else "1")
         if choice == "q":
             console.print("[dim]Bye.[/dim]")
             return
         if choice == "r":
+            if not has_brand:
+                console.print("[yellow]Pick a brand first (option 0).[/yellow]")
+                continue
             step_readiness()
             continue
         _, fn = STEPS[choice]

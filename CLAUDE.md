@@ -26,14 +26,18 @@ Market Intelligence → Content Creation → Lead Generation → Campaign Optimi
 
 ## Project Structure
 ```
-agents/           # One file per agent + base class
-config/           # Brand voice, ICP, API settings
-prompts/          # Prompt library per agent
-integrations/     # CRM, ads, content platform connectors
-pipeline/         # Orchestrator that runs the full fleet
-reports/          # Agent output reports (gitignored)
-tests/            # Agent and integration tests
+agents/             # One file per agent + base class + requirements registry
+brands/<slug>/      # Per-brand: .env, brand_voice.yaml, icp.yaml, integrations.yaml, input.json
+config/             # Global runtime settings + brand-config templates (config/templates/)
+prompts/            # Prompt library per agent
+integrations/       # CRM, ads, content platform connectors
+pipeline/           # Orchestrator + setup wizard + brand resolver + reset command
+reports/<slug>/     # Agent output reports per brand (gitignored)
+tests/              # Agent and integration tests
 ```
+
+## Brand Model
+The project is multi-tenant: each brand lives in `brands/<slug>/` with its own `.env` and YAMLs. Active brand is resolved by `pipeline/brand.py` in this order: `BRAND` env var → `.active-brand` file → single brand under `brands/`. Templates for new brands live in `config/templates/`. Settings shared across all brands stay in `config/settings.yaml`.
 
 ## Rollout Phases
 - **Phase 1 (Wk 1–2):** Foundation — brand voice docs, API access, CRM connections
@@ -53,3 +57,7 @@ tests/            # Agent and integration tests
 - All prompts live in `prompts/<agent_name>/` as `.md` files — never hardcode prompts in agent files
 - Secrets go in `.env` (never committed) — see `config/settings.yaml` for the key names
 - Human-in-the-loop gates are controlled per agent via `config/settings.yaml → agents.<name>.require_approval`
+- Per-agent integration & config requirements live in `agents/requirements.py` (`requires_any`, `optional`, `requires_config`). The orchestrator skips an agent in live mode if its requirements aren't met; the setup wizard reads the same registry to compute per-agent runnability
+- Run `marketing-agents setup` for the interactive wizard. It scopes everything to the active brand and prompts to create a brand on first launch
+- Brand commands: `marketing-agents brand list | show | use <slug> | new <slug>`. Per-run override: `marketing-agents run --brand <slug> --input ...`
+- Reports write to `reports/<active-brand>/`; `AgentResult.save()` resolves the brand via `pipeline.brand.active_brand()`

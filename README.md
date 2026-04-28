@@ -168,6 +168,7 @@ marketing-agents/
 │
 ├── agents/                          # One file per agent
 │   ├── base_agent.py                # BaseAgent (abstract) + AgentResult
+│   ├── requirements.py              # Per-agent integration & config requirements
 │   ├── market_intelligence.py       # Agent 01
 │   ├── content_creation.py          # Agent 02
 │   ├── lead_generation.py           # Agent 03
@@ -191,30 +192,42 @@ marketing-agents/
 │
 ├── pipeline/                        # Orchestration layer
 │   ├── orchestrator.py              # MarketingPipeline — runs all 6 agents in sequence
+│   ├── brand.py                     # Active-brand resolution + brand directory helpers
+│   ├── setup_wizard.py              # Interactive wizard for first-time setup
+│   ├── reset.py                     # Archive command (move data to _archive/<ts>/)
 │   └── cli.py                       # Typer CLI entrypoint (marketing-agents command)
 │
-├── config/                          # Brand-agnostic templates — fill in for your brand
-│   ├── settings.yaml                # Model tiers, approval gates, schedules
-│   ├── integrations.yaml            # Data source registry (connected | not_started | blocked)
-│   ├── brand_voice.yaml             # Tone, messaging, glossary, do/don't examples
-│   └── icp.yaml                     # Ideal Customer Profile + lead scoring
+├── config/
+│   ├── settings.yaml                # Project-wide runtime config (model tiers, schedules)
+│   └── templates/                   # Templates copied into brands/<slug>/ on init
+│       ├── brand_voice.yaml
+│       ├── icp.yaml
+│       └── integrations.yaml
+│
+├── brands/                          # One subdirectory per brand (created via `brand new`)
+│   └── <slug>/
+│       ├── .env                     # Brand-specific secrets (gitignored)
+│       ├── brand_voice.yaml
+│       ├── icp.yaml
+│       ├── integrations.yaml
+│       └── input.json               # Pipeline inputs for this brand
 │
 ├── examples/
-│   ├── input.json                   # Generic B2B SaaS pipeline input — use this to kick the tires
-│   └── americavoice/                # Fully populated reference implementation
+│   └── americavoice/                # Fully populated reference brand
 │       ├── README.md                # How this reference is organized
-│       ├── brand_voice.yaml         # Populated brand voice
-│       ├── icp.yaml                 # Populated ICP
-│       ├── integrations.yaml        # Populated integration registry (Phase 1 audit)
+│       ├── brand_voice.yaml
+│       ├── icp.yaml
+│       ├── integrations.yaml
 │       └── input.json               # Realistic pipeline input
 │
 ├── tests/
 │   └── test_agents.py               # Pytest tests for AgentResult and config loading
 │
-├── reports/                         # Agent output files (gitignored)
+├── reports/<slug>/                  # Per-brand agent output files (gitignored)
 │
-├── .env                             # Secrets — never committed
-├── .env.example                     # Template — copy to .env to get started
+├── .env                             # Optional shared secrets (gitignored) — e.g. Anthropic key billed across all brands
+├── .env.example                     # Template — copied into each new brand's .env
+├── .active-brand                    # Single line with the active brand slug (gitignored)
 └── pyproject.toml                   # Dependencies and CLI entrypoint
 ```
 
@@ -241,21 +254,45 @@ source .venv/bin/activate     # macOS / Linux
 
 # Install dependencies
 pip install -e ".[dev]"
-
-# Set up environment variables
-cp .env.example .env
-# Open .env and add your ANTHROPIC_API_KEY at minimum
 ```
 
-### Fill in your brand
+### Multi-tenant brand model
 
-The `config/*.yaml` files ship as templates with `{{PLACEHOLDER}}` fields. Before running the pipeline, populate:
+The project is brand-agnostic and multi-tenant: each brand lives in `brands/<slug>/` with its own `.env`, `brand_voice.yaml`, `icp.yaml`, `integrations.yaml`, and `input.json`. Reports also nest by brand at `reports/<slug>/`. Active brand is resolved in this order:
 
-1. **`config/brand_voice.yaml`** — brand name, tone pillars, glossary, do/don't examples
-2. **`config/icp.yaml`** — primary persona, behavioral signals, lead-scoring weights
-3. **`config/integrations.yaml`** — flip integrations from `not_started` to `connected` as you wire them up
+1. `BRAND=acmecorp` environment variable (per-invocation override)
+2. `.active-brand` file at the project root (persistent default)
+3. The single brand under `brands/` (auto-pick if only one exists)
 
-See [`examples/americavoice/`](examples/americavoice/README.md) for a fully populated reference.
+Templates for new brands live in `config/templates/`. Project-wide runtime settings (model tiers, dry-run defaults) stay in `config/settings.yaml`. A shared `.env` at the project root is also loaded — handy for an Anthropic key billed across all brands; brand-specific values override shared ones.
+
+```bash
+marketing-agents brand new acmecorp        # create + activate
+marketing-agents brand list                # list all brands, mark active
+marketing-agents brand use otherbrand      # switch active brand
+marketing-agents brand show                # print active brand slug
+```
+
+### Fill in your brand — interactive wizard
+
+The fastest path is the built-in setup wizard. It scopes everything to the active brand and only re-prompts for the parts that still need attention.
+
+```bash
+marketing-agents setup
+```
+
+The wizard covers (all paths under `brands/<active>/`):
+
+0. **Active brand** — pick or create a brand
+1. **API keys** (`.env`) — at minimum `ANTHROPIC_API_KEY`
+2. **Brand voice** (`brand_voice.yaml`) — tone pillars, glossary, do/don't examples
+3. **ICP** (`icp.yaml`) — persona, behavioral signals, lead-scoring weights
+4. **Integration statuses** (`integrations.yaml`) — flip each integration to `connected` as you wire it up
+5. **Pipeline input** (`input.json`) — copy of the starter payload
+
+It also has a **readiness check** (`r`) that reports per-agent runnability: which of the 6 agents can run live with your current setup, and exactly what's missing for each one.
+
+> **Manual setup:** if you'd rather edit YAML by hand, see [`examples/americavoice/`](examples/americavoice/README.md) for a fully populated reference and copy the patterns into `brands/<your-slug>/`.
 
 ### Verify setup
 
@@ -276,23 +313,43 @@ marketing-agents --help
 All agents run but no emails are sent, no ads are adjusted, and no CRM records are written. This is the default until you're ready to go live.
 
 ```bash
-# Run the full pipeline with the generic example input
-marketing-agents run --input examples/input.json
+# Run the full pipeline against the active brand's input
+marketing-agents run --input brands/<slug>/input.json
 
-# Or run against the America Voice reference
-marketing-agents run --input examples/americavoice/input.json
+# Or against the America Voice reference
+marketing-agents run --input examples/americavoice/input.json --brand americavoice
 
-# Run a single agent by name
+# Run a single agent for the active brand
 marketing-agents agent market_intelligence
 marketing-agents agent content_creation
+
+# Per-invocation brand override (no need to switch active brand)
+marketing-agents run --brand otherbrand --input brands/otherbrand/input.json
 ```
 
 ### Live mode
 
 ```bash
-# Enable live writes (requires all integrations configured)
-marketing-agents run --input examples/input.json --live
+# Enable live writes (requires the active brand's integrations to be connected)
+marketing-agents run --input brands/<slug>/input.json --live
 ```
+
+### Resetting project data
+
+When you're handing the repo to a new brand or want a clean slate, archive the existing data instead of deleting it:
+
+```bash
+marketing-agents reset           # interactive — defaults to "no"
+marketing-agents reset --yes     # skip the confirmation prompt
+```
+
+This **moves** (does not delete) the following into a timestamped `_archive/<UTC-stamp>/` directory at the project root, so a real human can review and remove them manually:
+
+- `reports/` — every agent output to date
+- `examples/` — sample inputs and the reference brand
+- `input.json` at the project root, if present
+
+Code, prompts, `config/`, `.env`, README, and CLAUDE.md are never touched. To restore the committed `examples/` directory: `git checkout examples/`. The `_archive/` directory itself is gitignored.
 
 You can also override dry-run globally via environment variable:
 
@@ -329,7 +386,7 @@ The pipeline input is a single JSON document with the following top-level keys. 
 
 ### Pipeline output
 
-Each agent writes two files to `reports/` via `AgentResult.save()` in `agents/base_agent.py`:
+Each agent writes two files to `reports/<brand>/` via `AgentResult.save()` in `agents/base_agent.py`. The `<brand>` directory is derived from `brand.name` in `config/brand_voice.yaml` (lowercased, alphanumeric-only) — e.g. `America Voice` → `reports/americavoice/`. Until brand voice is filled, output goes to `reports/unconfigured/`.
 
 - **`<agent>_<YYYYMMDD_HHMMSS>.json`** — full structured output (all fields returned by the agent, plus `success`, `timestamp`, and `summary`). Parse this for downstream tooling.
 - **`<agent>_<YYYYMMDD_HHMMSS>.md`** — human-readable summary only. Good for Slack/Notion paste-ins.
@@ -338,19 +395,20 @@ Timestamps are UTC.
 
 ```
 reports/
-├── market_intelligence_agent_20260420_090000.json    # structured data
-├── market_intelligence_agent_20260420_090000.md      # human-readable summary
-├── content_creation_agent_20260420_090112.json
-...
+└── americavoice/
+    ├── market_intelligence_agent_20260420_090000.json    # structured data
+    ├── market_intelligence_agent_20260420_090000.md      # human-readable summary
+    ├── content_creation_agent_20260420_090112.json
+    ...
 ```
 
 ---
 
 ## Configuration
 
-### `config/settings.yaml` — Runtime behavior
+### `config/settings.yaml` — Project-wide runtime behavior
 
-Controls model selection, approval gates, schedules, and pipeline flags. Safe to commit — no secrets.
+Shared by **every** brand. Controls model selection, approval gates, schedules, and pipeline flags. Safe to commit — no secrets.
 
 ```yaml
 anthropic:
@@ -367,17 +425,21 @@ agents:
     outreach_daily_limit: 50               # Max drafts per run
 ```
 
-### `config/brand_voice.yaml` — Brand voice template
+### `brands/<slug>/brand_voice.yaml` — Brand voice (per brand)
 
-Defines voice pillars, prohibited words, channel-specific tone guidance, and sample copy for each sales goal. All content agents read this file. Fill in the `{{PLACEHOLDER}}` fields for your brand, or copy a reference from `examples/americavoice/brand_voice.yaml`.
+Defines voice pillars, prohibited words, channel-specific tone guidance, and sample copy for each sales goal. Read by Content Creation and Customer Engagement agents. Created from `config/templates/brand_voice.yaml` when you run `marketing-agents brand new`.
 
-### `config/icp.yaml` — Ideal Customer Profile template
+### `brands/<slug>/icp.yaml` — Ideal Customer Profile (per brand)
 
-Defines primary (and optional secondary) personas, behavioral signals, and lead-scoring weights used by Agent 03. The template includes both B2B (firmographics) and B2C (demographics) blocks — delete whichever doesn't apply.
+Defines primary (and optional secondary) personas, behavioral signals, and lead-scoring weights. Read by Lead Generation and Market Intelligence agents. The template covers both B2B (firmographics) and B2C (demographics) — drop whichever doesn't apply.
 
-### `config/integrations.yaml` — Data source registry
+### `brands/<slug>/integrations.yaml` — Data source registry (per brand)
 
-Registry of all integrations with status, auth method, agent dependencies, and open action items. Flip `status: not_started` to `status: connected` as you wire each one up.
+Registry of all this brand's integrations with status, auth method, agent dependencies, and open action items. Flip `status: not_started` to `status: connected` as you wire each one up. Each integration's `env_key` field points to the variable name in this brand's `.env`.
+
+### `brands/<slug>/.env` — Per-brand secrets
+
+Holds API keys and tokens for **this brand only**: HubSpot, Apollo, Google Ads, Meta Ads, Mailchimp, Slack, etc. Gitignored. The CLI loads the project-wide `.env` first (for an Anthropic key shared across brands), then overlays the active brand's `.env` so brand-specific values win.
 
 ---
 
@@ -392,14 +454,20 @@ Flip integrations to `connected` in `config/integrations.yaml` as you wire them 
 
 ### Agent readiness — what each agent needs
 
-| Agent | Required Integrations |
-|---|---|
-| 01 · Market Intelligence | App Store Reviews, Semrush/Ahrefs, Google Search Console, Slack, Notion |
-| 02 · Content Creation | Notion, WordPress/Webflow, Mailchimp/Klaviyo, Buffer/Hootsuite, Semrush/Ahrefs |
-| 03 · Lead Generation | HubSpot/Salesforce, Apollo.io, Outreach/Salesloft, LinkedIn Sales Nav |
-| 04 · Campaign Optimization | Google Ads, Meta Ads, GA4, Looker/Tableau |
-| 05 · Customer Engagement | Mailchimp/Klaviyo, HubSpot/Salesforce, Buffer/Hootsuite, internal customer data |
-| 06 · Strategy Synthesis | Slack, Notion, Looker/Tableau, GA4 |
+Each agent has a small set of **required** integrations (need ≥1 marked `connected`) and a list of **optional** ones (used if connected, ignored if not). Defined in `agents/requirements.py`.
+
+| Agent | Required (≥1 of) | Required configs | Optional |
+|---|---|---|---|
+| 01 · Market Intelligence | — (none) | `icp.yaml` | seo_tool, google_search_console, app_store_reviews, social_scheduler |
+| 02 · Content Creation | — (none) | `brand_voice.yaml` | cms, email_platform, design_tool, notion |
+| 03 · Lead Generation | crm, apollo | `icp.yaml`, `brand_voice.yaml` | linkedin_sales_nav, outreach_salesloft |
+| 04 · Campaign Optimization | google_ads, meta_ads | — | google_analytics_4, product_analytics, bi_tool |
+| 05 · Customer Engagement | email_platform, crm | `brand_voice.yaml` | customer_data_warehouse, social_scheduler, slack |
+| 06 · Strategy Synthesis | — (none) | — | bi_tool, slack, notion |
+
+**Live mode behaviour:** the orchestrator skips an agent (with a clear log line) if its required integrations or configs aren't ready. **Dry-run mode** warns but proceeds, so you can test the full pipeline against `examples/input.json` before any integrations are wired up.
+
+This means partial setups are first-class — for example, if you only have **Meta Ads** connected (no Google Ads), Campaign Optimization still runs against the Meta data alone. Run `marketing-agents setup` and pick **r** to see exactly which agents can run with your current setup.
 
 ---
 
