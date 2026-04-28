@@ -32,6 +32,14 @@ def run(
 
 
 @app.command()
+def setup():
+    """Interactive wizard to fulfill the materials required to start the project."""
+    from pipeline.setup_wizard import run_wizard
+
+    run_wizard()
+
+
+@app.command()
 def agent(
     agent_name: str = typer.Argument(help="Agent slug: market_intelligence | content_creation | lead_generation | campaign_optimization | customer_engagement | strategy_synthesis"),
     dry_run: bool = typer.Option(True, "--dry-run/--live"),
