@@ -58,11 +58,11 @@ def probe_anthropic(cfg: dict) -> CheckResult:
     try:
         models = client.models.list(limit=1)
     except anthropic.AuthenticationError as e:
-        return _failed(slug, f"401 Unauthorized: {e.message[:80] if hasattr(e, 'message') else str(e)[:80]}")
+        return _failed(slug, f"401 Unauthorized: {e.message[:300] if hasattr(e, 'message') else str(e)[:300]}")
     except anthropic.APIError as e:
-        return _failed(slug, f"API error: {str(e)[:80]}")
+        return _failed(slug, f"API error: {str(e)[:300]}")
     except Exception as e:
-        return _failed(slug, f"{type(e).__name__}: {str(e)[:80]}")
+        return _failed(slug, f"{type(e).__name__}: {str(e)[:300]}")
     latency = int((time.perf_counter() - t0) * 1000)
     first = models.data[0].id if models.data else "no models returned"
     return _ok(slug, f"models.list ok (first: {first})", latency)
@@ -93,7 +93,7 @@ def probe_meta_ads(cfg: dict) -> CheckResult:
             timeout=5.0,
         )
     except httpx.HTTPError as e:
-        return _failed(slug, f"{type(e).__name__}: {str(e)[:80]}")
+        return _failed(slug, f"{type(e).__name__}: {str(e)[:300]}")
     latency = int((time.perf_counter() - t0) * 1000)
     if resp.status_code == 200:
         body = resp.json()
@@ -101,10 +101,10 @@ def probe_meta_ads(cfg: dict) -> CheckResult:
     # Surface Meta's own error message — it tells you exactly what's wrong.
     try:
         err = resp.json().get("error", {})
-        msg = err.get("message", resp.text[:80])
+        msg = err.get("message", resp.text[:300])
     except ValueError:
-        msg = resp.text[:80]
-    return _failed(slug, f"HTTP {resp.status_code}: {msg[:80]}", latency)
+        msg = resp.text[:300]
+    return _failed(slug, f"HTTP {resp.status_code}: {msg[:300]}", latency)
 
 
 def probe_hubspot(cfg: dict) -> CheckResult:
@@ -127,11 +127,11 @@ def probe_hubspot(cfg: dict) -> CheckResult:
             timeout=5.0,
         )
     except httpx.HTTPError as e:
-        return _failed(slug, f"{type(e).__name__}: {str(e)[:80]}")
+        return _failed(slug, f"{type(e).__name__}: {str(e)[:300]}")
     latency = int((time.perf_counter() - t0) * 1000)
     if resp.status_code == 200:
         return _ok(slug, "HTTP 200, contacts.list ok", latency)
-    return _failed(slug, f"HTTP {resp.status_code}: {resp.text[:80]}", latency)
+    return _failed(slug, f"HTTP {resp.status_code}: {resp.text[:300]}", latency)
 
 
 # ── Registry ────────────────────────────────────────────────────────────────
