@@ -213,6 +213,13 @@ _STATUS_STYLE = {
     "blocked": "[yellow]blocked[/yellow]",
 }
 
+_CHECK_GLYPH = {
+    "ok": "[green]✓ ok[/green]",
+    "missing_key": "[red]✗ missing[/red]",
+    "failed": "[red]✗ failed[/red]",
+    "skipped": "[dim]— skipped[/dim]",
+}
+
 
 @integrations_app.command("list")
 def integrations_list(
@@ -300,3 +307,95 @@ def integrations_list(
         )
     console.print(table)
     console.print(f"[dim]{len(rows)}/{len(items)} integration(s) shown[/dim]")
+
+
+@integrations_app.command("check")
+def integrations_check(
+    name: str | None = typer.Option(
+        None, "--name", "-n", help="Check a single integration by slug instead of all",
+    ),
+    update_status: bool = typer.Option(
+        False, "--update-status",
+        help="Flip status: connected → in integrations.yaml for probes that pass",
+    ),
+    brand: str | None = typer.Option(
+        None, "--brand", "-b", help="Check a specific brand instead of the active one"
+    ),
+):
+    """Run health-check probes against the active brand's integrations.
+
+    Each probe makes one cheap auth-checked API call. Integrations without a
+    probe registered in integrations/checks.py report as 'skipped'.
+
+    Exit code: 0 if every non-skipped probe passes, 1 otherwise.
+    """
+    import yaml as _yaml
+    from pipeline.brand import brand_file
+    from integrations.checks import HEALTH_PROBES, run_check
+
+    _apply_brand_override(brand)
+    try:
+        path = brand_file("integrations.yaml")
+        active = active_brand()
+    except BrandNotConfigured as e:
+        console.print(f"[yellow]{e}[/yellow]")
+        raise typer.Exit(1) from None
+
+    if not path.exists():
+        console.print(f"[red]No integrations.yaml under brands/{active}/[/red]")
+        raise typer.Exit(1)
+
+    text = path.read_text()
+    data = _yaml.safe_load(text) or {}
+    items: dict = data.get("integrations", {}) or {}
+
+    targets = [(name, items.get(name) or {})] if name else list(items.items())
+    if name and not items.get(name):
+        console.print(f"[red]Unknown integration slug: {name}[/red]")
+        raise typer.Exit(1)
+
+    table = Table(title=f"Integration Checks — brand '{active}'", show_lines=False)
+    table.add_column("Slug", style="bold")
+    table.add_column("Result", width=14)
+    table.add_column("Detail")
+    table.add_column("Latency", justify="right", style="dim")
+
+    results = []
+    for slug, cfg in targets:
+        result = run_check(slug, cfg or {})
+        results.append(result)
+        latency = f"{result.latency_ms} ms" if result.latency_ms is not None else "—"
+        table.add_row(slug, _CHECK_GLYPH.get(result.state, result.state), result.detail, latency)
+    console.print(table)
+
+    counts = {"ok": 0, "missing_key": 0, "failed": 0, "skipped": 0}
+    for r in results:
+        counts[r.state] = counts.get(r.state, 0) + 1
+    summary = (
+        f"[green]{counts['ok']} ok[/green] · "
+        f"[red]{counts['missing_key'] + counts['failed']} fail[/red] · "
+        f"[dim]{counts['skipped']} skipped[/dim]   "
+        f"[dim]({len(HEALTH_PROBES)} probes registered)[/dim]"
+    )
+    console.print(summary)
+
+    if update_status:
+        passed = {r.slug for r in results if r.ok}
+        if passed:
+            updated_text = text
+            for slug in passed:
+                # Targeted regex replacement keeps comments intact.
+                import re as _re
+                pattern = _re.compile(
+                    rf"(^  {_re.escape(slug)}:.*?\n(?:.*\n)*?)(    status:\s*)(\S+)",
+                    _re.MULTILINE,
+                )
+                updated_text = pattern.sub(
+                    lambda m: f"{m.group(1)}{m.group(2)}connected", updated_text, count=1
+                )
+            path.write_text(updated_text)
+            console.print(f"[green]✓ Marked {len(passed)} integration(s) as connected[/green]")
+
+    # Non-skipped failures bubble up as exit 1
+    fail_count = counts["missing_key"] + counts["failed"]
+    raise typer.Exit(1 if fail_count else 0)

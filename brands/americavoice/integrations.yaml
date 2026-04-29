@@ -91,7 +91,8 @@ integrations:
     status: not_started
     used_by: [campaign_optimization]
     gaps: "Confirm Business Manager admin access"
-    env_key: META_ADS_CLIENT_ID
+    env_key: META_ADS_ACCESS_TOKEN
+    env_account_id: META_ADS_ACCOUNT_ID
 
   buffer_hootsuite:
     label: "Buffer / Hootsuite"

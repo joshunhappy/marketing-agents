@@ -28,7 +28,12 @@ marketing-agents integrations list                    # all integrations for act
 marketing-agents integrations list --status connected # filter by connection status
 marketing-agents integrations list --used-by lead_generation
 marketing-agents integrations list --plain            # TSV output for grep/scripting
+marketing-agents integrations check                   # ping each integration's API; exit 1 on any failure
+marketing-agents integrations check --name anthropic  # check a single integration
+marketing-agents integrations check --update-status   # flip status: connected for probes that pass
 ```
+
+`integrations check` runs real authenticated API calls (one cheap probe per integration). Slugs without a probe registered in `integrations/checks.py` report as `— skipped` rather than failing. Add a probe for each integration as you wire it up; today the runner ships with `anthropic` and `crm_salesforce_hubspot`.
 
 **Run the pipeline**
 ```bash
